@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>S-ENERGY Matrix 12×4 | Zarlar</title>
+<link rel="stylesheet" href="zarlar.css">
+<style>
+/* Page-specifieke styling */
+.matrix-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.matrix-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.matrix-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.matrix-header .subtitle {
+  font-family: var(--font-data);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* Matrix tabel */
+.mtx-energy {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 auto 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* Pixel styling (conform matrix.html) */
+.px {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.4);
+  transition: background-color 0.4s, box-shadow 0.3s;
+}
+
+.px.glow {
+  box-shadow: 0 0 12px 3px var(--glow-color);
+}
+
+.px-row td {
+  padding: 3px;
+}
+
+/* Label rij */
+.lbl-row td {
+  padding: 12px 3px 0;
+  text-align: center;
+  vertical-align: top;
+}
+
+.lbl-sym {
+  font-size: 16px;
+  display: block;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.lbl-main {
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: block;
+  white-space: nowrap;
+}
+
+.lbl-unit {
+  font-family: var(--font-data);
+  font-size: 8px;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 1px;
+}
+
+/* Status info */
+.status-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.status-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-label {
+  color: var(--text-dim);
+}
+
+.status-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Legenda */
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  justify-content: center;
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 24px;
+  padding: 16px;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leg-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.4);
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="/" style="color:var(--text-muted);text-decoration:none;display:flex;align-items:center;padding:4px;border-radius:5px;transition:color 0.15s;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </a>
+    <div class="topbar-title">S-ENERGY Matrix 12×4</div>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-refresh" id="refresh-btn">
+      <span class="refresh-dot" id="refresh-dot"></span>
+      <span>Refresh</span>
+    </button>
+    <span id="ts" class="topbar-clock">—</span>
+  </div>
+</div>
+
+<!-- Hoofdinhoud -->
+<div class="matrix-container">
+  
+  <div class="matrix-header">
+    <h1>Smart Energy Matrix</h1>
+    <div class="subtitle">LIVE · 12 kolommen × 4 rijen · auto-refresh 15s</div>
+  </div>
+
+  <!-- Status info -->
+  <div class="status-info">
+    <div class="status-row">
+      <div class="status-item">
+        <span class="status-label">Status:</span>
+        <span id="status-badge">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Solar:</span>
+        <span class="status-value" id="info-solar">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">EPEX:</span>
+        <span class="status-value" id="info-epex">—</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Laatst bijgewerkt:</span>
+        <span class="status-value" id="info-ts">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Matrix tabel -->
+  <table class="mtx-energy">
+    <tbody>
+      <!-- Rij 0 (bovenaan) -->
+      <tr class="px-row" id="row-0"></tr>
+      <!-- Rij 1 -->
+      <tr class="px-row" id="row-1"></tr>
+      <!-- Rij 2 -->
+      <tr class="px-row" id="row-2"></tr>
+      <!-- Rij 3 (onderaan) -->
+      <tr class="px-row" id="row-3"></tr>
+      <!-- Labels -->
+      <tr class="lbl-row" id="lbl-row"></tr>
+    </tbody>
+  </table>
+
+  <!-- Legenda -->
+  <div class="legenda">
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#00c896;"></div>
+      <span>Groen = € opbrengst</span>
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#ff4558;"></div>
+      <span>Rood = € kosten</span>
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#00dca8;"></div>
+      <span>Cyaan = negatieve prijs</span>
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#ffb830;"></div>
+      <span>Oranje = waarschuwing</span>
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#b060ff;"></div>
+      <span>Paars = toekomst</span>
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#4a9eff;"></div>
+      <span>Blauw = cyaan/info</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="zarlar.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+// S-ENERGY Matrix 12×4 — Live visualisatie
+// Conform ESP32_C6_ENERGY v1.27 matrix layout
+// ════════════════════════════════════════════════════════════
+
+// ── Kolom definities (v1.27) ────────────────────────────────
+const COLS = [
+  { id: 0,  sym: '☀️',  label: 'SOL',    unit: '6kW',   desc: 'Solar vermogen' },
+  { id: 1,  sym: '⚡',  label: 'SCH↓',   unit: '10kW',  desc: 'SCH afname' },
+  { id: 2,  sym: '⚡',  label: 'SCH↑',   unit: '6kW',   desc: 'SCH injectie' },
+  { id: 3,  sym: '🏠',  label: 'WON↓',   unit: '10kW',  desc: 'WON afname' },
+  { id: 4,  sym: '🏠',  label: 'WON↑',   unit: '6kW',   desc: 'WON injectie' },
+  { id: 5,  sym: '📊',  label: 'PIEK',   unit: '15kW',  desc: 'Piek status' },
+  { id: 6,  sym: '💰',  label: 'ct/kWh', unit: '40ct',  desc: 'All-in prijs' },
+  { id: 7,  sym: '💡',  label: 'HUIS',   unit: 'OK',    desc: 'Huishoudadvies' },
+  { id: 8,  sym: '🔋',  label: 'BAT',    unit: '~2028', desc: 'Batterij' },
+  { id: 9,  sym: '❤️',  label: 'HEAP',   unit: '60KB',  desc: 'ESP32 geheugen' },
+  { id: 10, sym: '📶',  label: 'WiFi',   unit: '-60dB', desc: 'RSSI' },
+  { id: 11, sym: '🔴',  label: 'SIM',    unit: 'S0·P1', desc: 'Simulatie status' }
+];
+
+const BLK = '#0a0a0a'; // Zwart (uit)
+
+let _data = null;
+let _lastUpdate = 0;
+
+// ── Initialiseer matrix HTML ────────────────────────────────
+function initMatrix() {
+  // Maak 4 rijen × 12 kolommen pixels
+  for (let r = 0; r < 4; r++) {
+    const row = document.getElementById(`row-${r}`);
+    for (let c = 0; c < 12; c++) {
+      const td = document.createElement('td');
+      const px = document.createElement('div');
+      px.className = 'px';
+      px.id = `px-${c}-${r}`;
+      px.style.background = BLK;
+      td.appendChild(px);
+      row.appendChild(td);
+    }
+  }
+
+  // Maak labels
+  const lblRow = document.getElementById('lbl-row');
+  for (const col of COLS) {
+    const td = document.createElement('td');
+    td.innerHTML = `
+      <span class="lbl-sym">${col.sym}</span>
+      <span class="lbl-main">${col.label}</span>
+      <span class="lbl-unit">${col.unit}</span>
+    `;
+    lblRow.appendChild(td);
+  }
+}
+
+// ── Poll S-ENERGY data ──────────────────────────────────────
+async function pollData() {
+  try {
+    _data = await zarlarFetch('/api/poll/senrg', { timeout: 5000 });
+    _lastUpdate = Date.now();
+    renderMatrix();
+    updateInfo();
+  } catch (e) {
+    console.error('Poll failed:', e);
+    document.getElementById('status-badge').innerHTML = 
+      '<span class="status-badge offline"><span class="status-dot"></span>offline</span>';
+  }
+}
+
+// ── Bereken pixel states per kolom ──────────────────────────
+function berekenKolom(col, data) {
+  const pixels = [BLK, BLK, BLK, BLK]; // Rij 0-3
+  
+  if (!data) return pixels;
+
+  switch (col) {
+    case 0: // SOL (solar kW, 0-6kW, groen)
+      return lightbar(data.a / 6000, '#00c896');
+    
+    case 1: // SCH↓ (afname kW, 0-10kW, rood)
+      return lightbar(data.e / 10000, '#ff4558');
+    
+    case 2: // SCH↑ (injectie kW, 0-6kW, groen)
+      return lightbar(data.f / 6000, '#00c896');
+    
+    case 3: // WON↓ (afname kW, 0-10kW, rood)
+      const won_afname = Math.max(0, data.won_w || 0);
+      return lightbar(won_afname / 10000, '#ff4558');
+    
+    case 4: // WON↑ (injectie kW, 0-6kW, groen/amber)
+      const won_injectie = Math.max(0, -(data.won_w || 0));
+      if (data.sim_p1 === 1) {
+        // Simulatie: dim amber (toekomst ~2028)
+        return [BLK, BLK, BLK, '#3a2a00'];
+      }
+      return lightbar(won_injectie / 6000, '#00c896');
+    
+    case 5: // PIEK (status 15kW, groen OK / rood alarm)
+      const piek_pct = (data.piek_w || 0) / 15000;
+      if (piek_pct <= 1.0) {
+        // OK: 1 groen pixel onderaan
+        pixels[3] = '#00c896';
+      } else {
+        // Alarm: rode gradient
+        const over = Math.min(1, (piek_pct - 1) / 0.84);
+        return lightbar(over, '#ff4558');
+      }
+      return pixels;
+    
+    case 6: // ct/kWh (all-in prijs, 0-40ct, kleurgradiënt)
+      const ct = data.epex_nu || 0;
+      const kleur = epexKleur(ct);
+      return lightbar(Math.min(1, ct / 40), kleur);
+    
+    case 7: // HUIS (advies groen/rood)
+      const goed = (data.epex_nu < 15) || (data.a > 1500);
+      const huis_kleur = goed ? '#00c896' : '#ff4558';
+      return lightbar(goed ? 1 : 0.25, huis_kleur);
+    
+    case 8: // BAT (toekomst, dim paars)
+      return ['#2a1040', '#2a1040', '#2a1040', '#2a1040'];
+    
+    case 9: // HEAP (0-60KB, groen/amber/rood)
+      const heap_pct = Math.min(1, (data.heap || 0) / 60000);
+      const heap_kleur = heap_pct > 0.5 ? '#00c896' 
+                       : heap_pct > 0.3 ? '#ffb830' 
+                       : '#ff4558';
+      return lightbar(heap_pct, heap_kleur);
+    
+    case 10: // WiFi (RSSI -90→-60 dBm)
+      const rssi = data.rssi || -90;
+      const rssi_pct = Math.max(0, Math.min(1, (rssi + 90) / 30));
+      const wifi_kleur = rssi >= -60 ? '#00c896'
+                       : rssi >= -75 ? '#ffb830'
+                       : '#ff4558';
+      return lightbar(rssi_pct, wifi_kleur);
+    
+    case 11: // SIM (S0/P1 status, 2px bovenaan)
+      const s0_kleur = data.sim_s0 === 1 ? '#ff4558' : '#00c896';
+      const p1_kleur = data.sim_p1 === 1 ? '#ff4558' : '#00c896';
+      pixels[0] = s0_kleur; // Rij 0 = S0
+      pixels[1] = p1_kleur; // Rij 1 = P1
+      return pixels;
+  }
+  
+  return pixels;
+}
+
+// ── Lightbar helper (0-1 → 4 pixels) ────────────────────────
+function lightbar(val, kleur) {
+  val = Math.max(0, Math.min(1, val));
+  const n = Math.round(val * 4);
+  const pixels = [BLK, BLK, BLK, BLK];
+  
+  // Vul van onderaan (rij 3) naar boven (rij 0)
+  for (let i = 0; i < n; i++) {
+    pixels[3 - i] = kleur;
+  }
+  
+  return pixels;
+}
+
+// ── EPEX kleur gradient ─────────────────────────────────────
+function epexKleur(ct) {
+  if (ct < 0)  return '#00dca8'; // Cyaan (negatief)
+  if (ct < 15) return '#00c896'; // Groen (goedkoop)
+  if (ct < 25) return '#d4b000'; // Geel (normaal)
+  if (ct < 35) return '#ff9030'; // Oranje (duur)
+  return '#ff4558';              // Rood (zeer duur)
+}
+
+// ── Render matrix ───────────────────────────────────────────
+function renderMatrix() {
+  for (let c = 0; c < 12; c++) {
+    const pixels = berekenKolom(c, _data);
+    
+    for (let r = 0; r < 4; r++) {
+      const el = document.getElementById(`px-${c}-${r}`);
+      if (el) {
+        el.style.background = pixels[r];
+        
+        // Glow effect voor actieve pixels
+        if (pixels[r] !== BLK) {
+          el.classList.add('glow');
+          el.style.setProperty('--glow-color', pixels[r] + '66');
+        } else {
+          el.classList.remove('glow');
+        }
+      }
+    }
+  }
+}
+
+// ── Update info sectie ──────────────────────────────────────
+function updateInfo() {
+  if (!_data) return;
+  
+  // Status badge
+  const s0 = _data.sim_s0 === 1 ? 'S0:SIM' : 'S0:LIVE';
+  const p1 = _data.sim_p1 === 1 ? 'P1:SIM' : 'P1:LIVE';
+  const alleenLive = _data.sim_s0 === 0 && _data.sim_p1 === 0;
+  const alleenSim  = _data.sim_s0 === 1 && _data.sim_p1 === 1;
+  
+  const badgeKleur = alleenLive ? 'online' : alleenSim ? 'pending' : 'pending';
+  const badgeTekst = `${s0} · ${p1}`;
+  
+  document.getElementById('status-badge').innerHTML = 
+    `<span class="status-badge ${badgeKleur}"><span class="status-dot"></span>${badgeTekst}</span>`;
+  
+  // Solar
+  document.getElementById('info-solar').innerHTML = 
+    `<span style="color:var(--green)">${(_data.a || 0).toFixed(0)} W</span>`;
+  
+  // EPEX
+  const epex_kleur = epexKleur(_data.epex_nu || 0);
+  document.getElementById('info-epex').innerHTML = 
+    `<span style="color:${epex_kleur}">${(_data.epex_nu || 0).toFixed(1)} ct/kWh</span>`;
+  
+  // Timestamp
+  document.getElementById('info-ts').textContent = zarlarTs(_lastUpdate);
+}
+
+// ── Initialisatie ───────────────────────────────────────────
+initMatrix();
+zarlarClock('ts');
+zarlarAutoRefresh(15, pollData);
+</script>
+
+</body>
+</html>
