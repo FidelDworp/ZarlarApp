@@ -47,9 +47,6 @@ Elke controller publiceert enkel zijn `/json` endpoint — het Dashboard doet de
 ⚠️ **MAC-wissel HVAC:** experimenteerbord (MAC `58:8C:81:32:29:54`) is ook als HVAC gebruikt.
 Productie-HVAC draait op `58:8C:81:32:2B:90`. Bij twijfel: check MAC in serial boot-output.
 
-⚠️ **MAC-wissel HVAC:** experimenteerbord (MAC `58:8C:81:32:29:54`) is ook als HVAC gebruikt.
-Productie-HVAC draait op `58:8C:81:32:2B:90`. Bij twijfel: check MAC in serial boot-output.
-
 ### 1.3 Particle Photon controllers (transitiefase)
 Tijdens de migratie van Particle Photon naar ESP32 draaien de Photon-controllers nog in productie.
 Het Dashboard pollt hun data via een **Cloudflare Worker** die de Particle Cloud API afschermt.
@@ -164,7 +161,7 @@ Gedetailleerde pinout per controller: zie §4.1 (HVAC), §5.1 (ECO), §6.1 (SENR
 |---|---|---|---|---|---|
 | IO1 | — | Pomprelais | — | LDR1 analog | — |
 | IO3 | DS18B20 | DS18B20 | — | DS18B20 | — |
-| IO4 | — | — | **LED matrix DIN** | NeoPixels | NeoPixels matrix |
+| IO2 | — | — | **LED matrix DIN** | NeoPixels | NeoPixels matrix |
 | IO5 | — | PWM pomp | **S0 Solar** | PIR MOV1 | — |
 | IO6 | — | — | **S0 SCH afname** | DHT22 | — |
 | IO7 | — | — | **S0 SCH injectie** | — | — |
@@ -173,8 +170,8 @@ Gedetailleerde pinout per controller: zie §4.1 (HVAC), §5.1 (ECO), §6.1 (SENR
 | IO13 | I2C SDA | — | — | I2C SDA | — |
 | IO20 | PWM vent. | SPI CS | — | — | — |
 
-> ⚠️ **SENRG pinnen bevestigd 26/04/2026:** LED matrix op **IO4** (Pixel-line connector),
-> S0-kanalen op IO5/IO6/IO7 (Roomsense/Option RJ45). IO10 is vrij op SENRG.
+> ⚠️ **SENRG pinnen bevestigd 28/04/2026:** LED matrix **12×4 (48 pixels)** op **IO2** (Pixel-line connector),
+> S0-kanalen op IO5/IO6/IO7 (Roomsense/Option RJ45). IO4 en IO10 zijn vrij op SENRG.
 
 ---
 
@@ -478,8 +475,8 @@ Nog te meten — zie openstaande punten §5.7.
 ---
 
 ## 6. Smart Energy Controller (192.168.0.73)
-> **Status: in ontwikkeling — sketch v0.0 nog te schrijven.**
-> Volledig technisch detail: zie **`Energy_Management_System_v1_5.md`**
+> **Status: ✅ Productie — sketch v1.27 actief sinds 28 april 2026**
+> Volledig technisch detail: zie **`Energy_Management_System_v1_8.md`**
 
 ---
 
@@ -490,17 +487,15 @@ Nog te meten — zie openstaande punten §5.7.
 | Static IP | 192.168.0.73 |
 | Locatie | Kastje inkomhal Maarten, naast Telenet router |
 | Voeding | 5V via shield of USB-C |
-| LED-strip | 12× WS2812B op IO10, 5V voeding apart (niet via shield PTC) |
+| LED matrix | **12×4 WS2812B (48 pixels)** op **IO2**, 5V voeding apart (niet via shield PTC) |
 | S0-interface | Via RJ45 naar interface PCB (zie §6.2) |
 
 | ESP32-C6 Pin | Signaal | Functie |
 |---|---|---|
-| IO3 | S0 Solar | S0-puls interrupt FALLING |
-| IO4 | LED matrix (48 pixels)
+| IO2 | LED matrix DIN | WS2812B data (48 pixels, via 330Ω serie-weerstand) |
 | IO5 | S0 Solar | S0-puls interrupt FALLING |
 | IO6 | S0 SCH afname | S0-puls interrupt FALLING |
-| IO7 | S0 SCH injectie
-| IO10 | LED-strip data | WS2812B DIN (via 330Ω serie-weerstand) |
+| IO7 | S0 SCH injectie | S0-puls interrupt FALLING |
 
 ### 6.2 Interface PCB — S0 aansluiting
 **S0-uitgang = passief (spanningloos) contact** (IEC 62053-31) → directe verbinding zonder optocoupler.
@@ -525,16 +520,18 @@ Nog te meten — zie openstaande punten §5.7.
 |---|---|---|---|
 | 1 | Oranje-wit | GND | GND |
 | 2 | Oranje | 3.3V | 3.3V |
-| 3 | Groen-wit S0 Solar (IO5)
-Pin 4 (Blauw)      → S0 SCH afname (IO6)
-Pin 5 (Blauw-wit)  → S0 SCH injectie (IO7)
-| 6 | Groen | S0 reserve | IO6 |
+| 3 | Groen-wit | S0 Solar | IO5 |
+| 4 | Blauw | S0 SCH afname | IO6 |
+| 5 | Blauw-wit | S0 SCH injectie | IO7 |
+| 6 | Groen | S0 reserve | — |
+| 7 | Bruin-wit | — | — |
+| 8 | Bruin | — | — |
 
 ### 6.3 Libraries
 | Library | Gebruik |
 |---|---|
 | `AsyncTCP` + `ESPAsyncWebServer` | Webserver (conform andere Zarlar-controllers) |
-| `Adafruit NeoPixel` | WS2812B LED-strip (12 pixels) |
+| `Adafruit NeoPixel` | WS2812B LED matrix (**48 pixels, 12×4 layout**) |
 | `Preferences` | NVS opslag (dagcumulatieven, EPEX-cache, instellingen) |
 | `HTTPClient` | EPEX ophalen (energy-charts.info) + ntfy.sh push |
 | `ArduinoJson` | EPEX JSON parsing |
@@ -573,45 +570,65 @@ Bij wijziging: Dashboard matrix-rij 2 en GAS-script S-ENERGY nalopen.
 | `ac` | RSSI | dBm | Conform andere controllers |
 | `ae` | Heap largest block | bytes | |
 
-### 6.5 LED-strip (12 pixels WS2812B)
-| # | Sym | Groep | Kleurlogica |
-|---|---|---|---|
-| 1 | ☀️ Solar | Energie | Uit→geel dim→groen helder |
-| 2 | 💰 Prijs | Energie | Lime=negatief / groen=goedkoop / geel=normaal / rood=duur |
-| 3 | ⚖️ Netto | Energie | Groen=injectie / rood=afname |
-| 4 | 🔋 Batterij | Batterij | SOC kleurschaal (toekomstig) |
-| 5 | ♨️ ECO | Groot | Groen=aan / zwart=uit |
-| 6 | 🚙 EV WON | Groot | Groen gradient op laadvermogen |
-| 7 | 🚗 EV SCH | Groot | Idem |
-| 8 | 🏠 WP WON | Groot | Groen=aan / zwart=uit |
-| 9 | 🏚️ WP SCH | Groot | Groen=aan / zwart=uit |
-| 10 | 🍳 Koken? | Advies | Groen=goed moment / rood=duur of piek vol |
-| 11 | 👕 Wassen? | Advies | Zelfde logica |
-| 12 | 📊 Piek | Piek | Groen→geel→oranje→rood vs MAX_PIEK |
+### 6.5 LED matrix 12×4 (48 pixels WS2812B)
 
-Pixels 10–11 (🍳👕) zijn speciaal voor Céline en Mireille — groen = goed moment, rood = wacht.
-Testpagina: https://fideldworp.github.io/ZarlarApp/epex-grafiek.html
+**Layout:** 12 kolommen × 4 rijen = 48 pixels totaal
+
+**Serpentine wiring:** Verticaal, kolom-per-kolom, rechts→links, afwisselend ↑↓
+- Pixel 0-3: Col 11 (rij 3→0, van onder naar boven)
+- Pixel 4-7: Col 10 (rij 0→3, van boven naar onder)
+- Pixel 8-11: Col 9 (rij 3→0, ↑)
+- ...etc
+
+**Kolomindeling v1.27 (definitief 27 april 2026):**
+
+| Col | Sym | Label | Bereik | Kleurlogica |
+|---|---|---|---|---|
+| 0 | ☀️ | SOL | 0-6kW | Groen lightbar (onder→boven) |
+| 1 | ⚡ | SCH↓ | 0-10kW | Rood lightbar (afname) |
+| 2 | ⚡ | SCH↑ | 0-6kW | Groen lightbar (injectie) |
+| 3 | 🏠 | WON↓ | 0-10kW | Rood lightbar (afname) |
+| 4 | 🏠 | WON↑ | 0-6kW | Groen lightbar (injectie, ~2028) |
+| 5 | 📊 | PIEK | 15kW | Groen OK / rood alarm |
+| 6 | 💰 | ct/kWh | 0-40ct | Cyaan→groen→geel→oranje→rood |
+| 7 | 💡 | HUIS | OK | Groen=goed moment / rood=duur |
+| 8 | 🔋 | BAT | ~2028 | Dim paars (toekomst) |
+| 9 | ❤️ | HEAP | 60KB | Groen>50% / amber / rood |
+| 10 | 📶 | WiFi | -60dB | Groen≥-60 / amber / rood |
+| 11 | 🔴 | SIM | S0·P1 | **Bovenaan (rij 0+1)** rood=SIM / groen=LIVE |
+
+**Kleurprincipes:**
+- Groen = € opbrengst / goed
+- Rood = € kosten / slecht
+- Lightbars: vullen van onderaan (rij 3) naar boven (rij 0)
+- SIM-indicators: uniek bovenaan (rij 0+1)
+
+**Web UI:** Live replica beschikbaar op `http://192.168.0.50:3000/12x4_matrix.html`
 
 ### 6.6 Matter endpoints
 Matter is **niet actief in fase 1** (heap-overhead). Optioneel later toe te voegen.
 
 ### 6.7 Heap-baseline
-Nog te meten bij eerste werkende sketch (v0.1).
+**Gemeten v1.27 (28/04/2026):**
+- Largest free block: ~262 KB (zonder Matter)
+- Status: ✅ Ruim voldoende
+- EPEX cache + webserver + NeoPixel library = stabiel
 
 ### 6.8 Versiehistorie
 | Versie | Datum | Inhoud |
 |---|---|---|
-| v0.0 | — | Nog te bouwen — zie fasering in EMS §16.10 |
+| v1.26 | 26 apr 2026 | Eerste werkende versie - S0 pulsmeting, EPEX integratie, basis LED matrix |
+| v1.27 | 28 apr 2026 | Matrix layout definitief: 12×4 verticale serpentine, pxIdx() correct, SIM col 11 bovenaan |
 
 ### 6.9 Openstaande actiepunten
 
 | Actie | Wie | Status |
 |---|---|---|
-ntfy.sh app installeren | Filip + Maarten | Open |
-EV-lader 2 merk/type opzoeken | Maarten | Open |
-UTP kabel trekken verdeelkast → inkomhal | Filip + Maarten | Open |
-CZ-TAW1 WP WON reset + herregistratie | Filip | Open |
-NIEUW: sketch v1.27 getest 28 april 2026
+| ntfy.sh app installeren | Filip + Maarten | Open |
+| EV-lader 2 merk/type opzoeken | Maarten | Open |
+| UTP kabel trekken verdeelkast → inkomhal | Filip + Maarten | Open |
+| CZ-TAW1 WP WON reset + herregistratie | Filip | Open |
+| Portal 12×4 matrix kleuren debuggen (sommige fout) | Filip | Open |
 
 ---
 
@@ -808,7 +825,7 @@ Synchronisatie: boot + Apple Home callback + webUI handler + loop sync elke 5s.
 |---|---|---|
 | 0 | S-HVAC | Systeem |
 | 1 | S-ECO | Systeem |
-| **2** | **S-ENERGY** | **Systeem — toe te voegen** |
+| **2** | **S-ENERGY** | **Systeem — ✅ Actief v1.27** |
 | 3 | S-OUTSIDE | Gereserveerd |
 | 4 | Separator | "ROOMS" |
 | 5–11 | R-BandB…R-ZITPL | Rooms |
@@ -860,9 +877,25 @@ server.onNotFound(cpRedirect);
 | v5.8 | S-ENERGY controller toegevoegd (idx 4, rij 2) · `renderEnergyRow()` 16 kolommen · sim_s0/sim_p1 oranje pixels |
 
 ### 8.10 Openstaande punten
-- **Matter verwijderen** uit HVAC, ECO en Dashboard sketches → heap besparing ~80–120 KB per controller (Matter enkel nodig op ROOM controllers voor Apple Home)
-- **OTA testen** op Dashboard
-- **Matrix kolommen 6/7 ROOM** aanpassen naar `w>0`/`x>0` (beweging ongeacht licht)
+
+**Heap optimalisatie via custom partitie tabel:**
+- **Probleem:** HVAC, ECO en Dashboard hebben heap pressure (~25-35 KB free) door Matter footprint
+- **Oude idee:** Matter verwijderen → ~80-120 KB winst, maar verliest Apple Home integratie
+- **Beter idee (29 apr 2026):** Custom partitie tabel compileren met **meer heap ruimte**
+  - Huidige `partitions_16mb.csv` is geoptimaliseerd voor 16 MB flash
+  - ESP32-C6 heeft flexibele partitie grenzen - heap kan vergroot ten koste van andere secties
+  - Compiler-flag wijziging mogelijk zonder code-aanpassingen
+  - **TODO:** Onderzoeken welke partitie tabel aanpassingen veilig zijn voor productie
+  - Dit zou heap probleem oplossen zonder Matter te verliezen!
+
+**OTA testen op Dashboard:** Nog niet getest na v5.8 update
+
+**Matrix kolommen 6/7 ROOM aanpassen naar bewegingsdetectie:**
+- **Huidige logica:** Col 6/7 tonen PIR beweging ALLEEN als licht aan is (`w>0 AND x>0`)
+- **Gewenste logica:** Col 6/7 tonen ALTIJD beweging als PIR triggert (`w>0` en `x>0` apart)
+- **Reden:** Bewegingshistorie blijft zichtbaar ook als licht uit is
+- **Impact:** Betere debugging van PIR sensoren, gedragspatronen herkennen
+- **TODO:** ROOM sketch aanpassen en testen
 
 ---
 
@@ -982,8 +1015,9 @@ sudo systemctl restart zarlar  # alleen na server.js wijziging
 |---|---|---|---|
 | Portal overzicht | `/` (index.html) | ✅ Actief | SVG-cirkels alle controllers, tabs |
 | ECO Boiler detail | `/eco.html` | ✅ Actief | Boiler SVG 6 lagen, temperaturen |
-| EPEX grafiek | `/epex-grafiek.html` | ✅ Actief | Spotprijzen, injectieteller, tariefvergelijking |
-| Live matrix | `/matrix.html` | ✅ Actief | 16×16 replica, ESP32 + Photon, auto-refresh |
+| EPEX grafiek | `/epex-grafiek.html` | ✅ Actief | Spotprijzen, injectieteller, tariefvergelijking, link naar matrix |
+| Live matrix 16×16 | `/matrix.html` | ✅ Actief | 16×16 replica, ESP32 + Photon, auto-refresh |
+| **S-ENERGY matrix 12×4** | **/12x4_matrix.html** | **✅ Actief 29/04** | **12×4 live matrix, SOL/SCH/WON/PIEK/€/WiFi/HEAP/SIM** |
 | HVAC detail | `/hvac.html` | ⬜ Gepland | — |
 | Afrekening WON/SCH | `/afrekening` | ⬜ Gepland | Capaciteitstarief verdeling |
 
@@ -994,6 +1028,7 @@ sudo systemctl restart zarlar  # alleen na server.js wijziging
 | Sensordata | ✅ Meet + publiceert `/json` | Pollt en toont |
 | Google Sheets logging | ✅ Dashboard doet dit | ❌ Nooit overnemen |
 | Statusmatrix 16×16 | ✅ Blijft ESP32 | Replica in matrix.html |
+| **S-ENERGY matrix 12×4** | **✅ Fysieke WS2812B matrix** | **✅ Web replica 12x4_matrix.html** |
 | Matter/HomeKit | ✅ Blijft ESP32 Room | — |
 | EPEX grafieken | ❌ Te zwaar | ✅ RPi |
 | Historiek + trends | ❌ Te zwaar | ✅ RPi (Google Sheets read-only) |
@@ -1026,18 +1061,19 @@ sudo systemctl restart zarlar  # alleen na server.js wijziging
 | Bestand | Beschrijving |
 |---|---|
 | `server.js` | Node.js server v2.0 — alle endpoints + Photon proxy + matrix aggregator |
-| `public/index.html` | Portal NIVO 1 — SVG-cirkels, tabs, S-ENERGY tegel |
+| `public/index.html` | Portal NIVO 1 — SVG-cirkels, tabs, S-ENERGY tegel → 12×4 matrix |
 | `public/eco.html` | ECO Boiler NIVO 2 — boiler SVG 6 lagen |
-| `public/epex-grafiek.html` | EPEX grafiek — spotprijzen, injectiekolom, tariefvergelijking |
+| `public/epex-grafiek.html` | EPEX grafiek — spotprijzen, tariefvergelijking, link naar matrix (LED strip verwijderd 29/04) |
 | `public/matrix.html` | Live 16×16 matrix replica — ESP32 + Photon fallback |
+| **`public/12x4_matrix.html`** | **S-ENERGY matrix 12×4 live replica — SOL/SCH/WON/PIEK/€/WiFi/HEAP/SIM** |
 | `deploy.sh` | Mac deploy script — git + SSH + rsync + herstart |
 | `update.sh` | RPi sync script |
 
 ### 11.4 Documentatie
 | Bestand | Beschrijving |
 |---|---|
-| `Zarlar_Master_Overnamedocument.md` | Dit document — master referentie |
-| `Energy_Management_System_v1_7.md` | Smart Energy volledig technisch werkdocument |
+| `Zarlar_Master_Overnamedocument.md` | Dit document — master referentie (bijgewerkt 29 april 2026) |
+| `Energy_Management_System_v1_8.md` | Smart Energy volledig technisch werkdocument |
 | `Zarlar_Portal_Plan_25apr26.md` | RPi portal projectdocument |
 
 ### 11.5 Overige
@@ -1107,7 +1143,24 @@ sudo systemctl restart zarlar  # alleen na server.js wijziging
 
 ### 12.5 LED matrix 12×4 (48 pixels)
 
-Kolomlabels voor behuizing: `SOL W · SOL kWh · SCH AF · SCH INJ · NETTO · WON W · EPEX · EPEX+1 · PIEK% · KOKEN? · WASSEN? · HEAP`
+**Kolomlabels voor behuizing (v1.27 definitief):**
+
+```
+☀️ SOL · ⚡ SCH↓ · ⚡ SCH↑ · 🏠 WON↓ · 🏠 WON↑ · 📊 PIEK · 💰 ct/kWh · 💡 HUIS · 🔋 BAT · ❤️ HEAP · 📶 WiFi · 🔴 SIM
+6kW    10kW     6kW      10kW     6kW      15kW    40ct     OK      ~2028   60KB    -60dB   S0·P1
+```
+
+**Betekenis:**
+- SOL: Solar vermogen (groen lightbar)
+- SCH↓/↑: Schuur afname/injectie (rood/groen)
+- WON↓/↑: Woning afname/injectie (rood/groen, ↑ pas vanaf ~2028)
+- PIEK: Maandpiek status vs 15kW limiet
+- ct/kWh: All-in EPEX prijs (gradiënt cyaan→groen→geel→rood)
+- HUIS: Advies goed moment (groen) of duur (rood)
+- BAT: Batterij toekomst (dim paars)
+- HEAP: ESP32 geheugen (groen>50%)
+- WiFi: RSSI signaalsterkte
+- SIM: S0/P1 simulatie status (bovenaan, rood=SIM / groen=LIVE)
 
 ---
 
@@ -1181,23 +1234,31 @@ De S-ENERGY controller en portal zijn al ontworpen voor beide scenario's.
 
 ---
 
-## 16. Matter — Beleid
+## 16. Matter — Beleid & Heap Optimalisatie
 
-| Controller | Matter | Reden |
-|---|---|---|
-| ROOM controllers | ✅ **Verplicht behouden** | Apple Home, scenes Mireille, multi-merk |
-| HVAC | ⬜ Verwijderen | Enkel via portal/dashboard |
-| ECO Boiler | ⬜ Verwijderen | Enkel via portal/dashboard |
-| S-ENERGY | ❌ Nooit toegevoegd | Meetcontroller |
-| Dashboard | ⬜ Verwijderen | Infrastructuur |
+| Controller | Matter | Status | Heap Strategy |
+|---|---|---|---|
+| ROOM controllers | ✅ **Behouden** | Productie | Apple Home essentieel, scenes Mireille |
+| HVAC | ⚠️ **Behouden voorlopig** | 25-35 KB free | Partitie tabel optie onderzoeken |
+| ECO Boiler | ⚠️ **Behouden voorlopig** | 25-35 KB free | Partitie tabel optie onderzoeken |
+| S-ENERGY | ❌ Nooit | >250 KB free | Geen Matter nodig |
+| Dashboard | ⚠️ **Behouden voorlopig** | ~30 KB free | Partitie tabel optie onderzoeken |
 
-**Heap winst:** ~80–120 KB per controller na Matter verwijdering.
+**Oude strategie (verworpen):** Matter verwijderen uit HVAC/ECO/Dashboard → ~80-120 KB winst, maar verliest Apple Home integratie
+
+**Nieuwe strategie (29 april 2026):** Custom partitie tabel compileren
+- ESP32-C6 heeft 16 MB flash + 512 KB SRAM
+- Huidige `partitions_16mb.csv` is conservatief - meer heap toewijzen mogelijk
+- Compiler kan heap vergroten ten koste van OTA partition of andere secties
+- **Voordeel:** Matter behouden + heap probleem oplossen
+- **Nadeel:** Minder ruimte voor OTA updates (maar 2.4 MB app is ruim voldoende)
+- **TODO:** Experimenteren met aangepaste partitie tabel op test-controller
 
 ---
 
 ## 17. Instructies nieuwe sessie
 
-1. **Upload dit document** + relevante sketch(es) + `Energy_Management_System_v1_7.md` bij Smart Energy sessies
+1. **Upload dit document** + relevante sketch(es) + `Energy_Management_System_v1_8.md` bij Smart Energy sessies
 2. **Vraag Claude het document samen te vatten** vóór hij iets aanpast
 3. **Eerst een plan** — Claude mag pas beginnen coderen na expliciete goedkeuring
 4. **Pin-mapping altijd vragen** voor een nieuwe sketch — Claude kent de hardware niet
@@ -1219,7 +1280,7 @@ De S-ENERGY controller en portal zijn al ontworpen voor beide scenario's.
 - KISS: geen AUTO/MANUEEL lagen boven sliders die al volledig functioneel zijn
 - **Browser gebruikt NOOIT lokale IPs** — alles via `/api/` op RPi
 - **SIM_S0 / SIM_P1 nooit automatisch omschakelen** — altijd bewuste handeling
-- **LED matrix SENRG op IO4** (niet IO10 — bevestigd 26/04/2026)
-- **Matter enkel op ROOM controllers** — verwijderen uit HVAC/ECO/Dashboard
+- **LED matrix 12×4 SENRG op IO2** (48 pixels, verticale serpentine, v1.27 bevestigd 28/04/2026)
+- **Matter heap strategie:** Custom partitie tabel onderzoeken ipv Matter verwijderen (zie §16)
 
-*Zarlar project — Filip Delannoy — bijgewerkt 26 april 2026*
+*Zarlar project — Filip Delannoy — bijgewerkt 29 april 2026*
