@@ -1045,7 +1045,7 @@ function bouwSyn(s) {
   const kaarten = [
     // HVAC
     {
-      naam: 'HVAC', link: '#', kl: hvac.online ? 'ok' : 'err',
+      naam: 'HVAC', link: '/hvac.html', kl: hvac.online ? 'ok' : 'err',
       icon: () => {
         const actief = ['p','q','r','s','t','u','v'].some(k => parseInt(hvac[k])===1);
         const kw = parseFloat(hvac.w)||0;
@@ -1082,7 +1082,7 @@ function bouwSyn(s) {
     },
     // S-ENERGY — live solar + netto + EPEX
     {
-      naam: 'S-ENERGY', link: '/12x4_matrix.html', kl: senrg.online ? 'ok' : 'err',
+      naam: 'S-ENERGY', link: '/matrix.html', kl: senrg.online ? 'ok' : 'err',
       icon: () => {
         const sol  = parseInt(senrg.a) || 0;
         const net  = parseInt(senrg.e) || 0;
@@ -1141,7 +1141,7 @@ function bouwSyn(s) {
     },
     // WiFi / Dashboard
     {
-      naam: 'Dashboard', link: '/matrix.html', kl: 'wt',
+      naam: 'Dashboard', link: '#', kl: 'wt',
       icon: () => {
         const r = parseInt(hvac.ac)||parseInt(eco.p)||-72;
         const klr = rssiKleur(r);

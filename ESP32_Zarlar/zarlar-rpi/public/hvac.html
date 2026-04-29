@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Zarlar — HVAC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0d12;
+  --card:  #111620;
+  --card2: #161d28;
+  --bdr:   rgba(255,255,255,0.07);
+  --text:  #e8eef4;
+  --muted: #6b7f8e;
+  --dim:   #1e2a36;
+  --green: #00d18c;
+  --amber: #ffb030;
+  --red:   #ff4555;
+  --blue:  #4da6ff;
+  --font:  'DM Sans', sans-serif;
+  --mono:  'DM Mono', monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; min-height:100%; }
+
+/* HEADER */
+.hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 12px; border-bottom:1px solid var(--bdr); }
+.back { width:34px; height:34px; border-radius:50%; background:var(--card); border:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; text-decoration:none; color:var(--muted); }
+.back:hover { color:var(--text); border-color:rgba(255,255,255,0.15); }
+.hdr-title { flex:1; }
+.hdr-title h1 { font-size:16px; font-weight:600; }
+.hdr-title p  { font-size:11px; color:var(--muted); margin-top:1px; font-family:var(--mono); }
+.status-badge { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); font-family:var(--mono); }
+.sdot { width:7px; height:7px; border-radius:50%; }
+
+/* CONTENT */
+.content { padding:14px; }
+
+/* BOILER + STATS LAYOUT */
+.main-row { display:flex; gap:14px; align-items:flex-start; margin-bottom:14px; }
+
+/* BOILER SVG CONTAINER */
+.boiler-wrap {
+  flex-shrink:0;
+  background:var(--card); border:1px solid var(--bdr); border-radius:16px;
+  padding:16px 12px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  position:relative;
+}
+.boiler-title { font-size:10px; font-weight:600; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; }
+
+/* SPIRAAL animatie - ACTIEF als één van de circuits ON is */
+.circuit-coil { stroke:url(#CircuitCoil); stroke-linecap:round; stroke-linejoin:round; stroke-width:8; stroke-dasharray:8; fill:none; animation:dash .5s linear infinite; }
+@keyframes dash { to { stroke-dashoffset:16; } }
+.circuit-coil-off { stroke:rgba(100,120,140,0.3); stroke-linecap:round; stroke-linejoin:round; stroke-width:8; fill:none; }
+
+/* STATS KOLOM */
+.stats-col { flex:1; display:flex; flex-direction:column; gap:8px; }
+
+/* INFO KAART */
+.info-card {
+  background:var(--card); border:1px solid var(--bdr); border-radius:14px;
+  padding:14px;
+}
+.ic-label { font-size:10px; color:var(--muted); letter-spacing:.6px; text-transform:uppercase; margin-bottom:4px; }
+.ic-val { font-family:var(--mono); font-size:28px; font-weight:500; line-height:1; }
+.ic-unit { font-size:13px; color:var(--muted); margin-left:4px; }
+.ic-sub  { font-size:11px; color:var(--muted); margin-top:6px; font-family:var(--mono); }
+
+/* CIRCUITS GRID */
+.circuits-card {
+  background:var(--card); border:1px solid var(--bdr); border-radius:14px;
+  overflow:hidden;
+}
+.circuits-header {
+  padding:10px 14px;
+  background:var(--card2);
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--bdr);
+}
+.circuits-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(80px, 1fr));
+  gap:1px;
+  background:var(--bdr);
+  padding:0;
+}
+.circuit-cell {
+  background:var(--card);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  transition:background .2s;
+}
+.circuit-cell:hover { background:var(--card2); }
+.circuit-icon { width:32px; height:32px; }
+.circuit-label { font-size:10px; color:var(--muted); text-align:center; }
+.circuit-state { font-size:11px; font-family:var(--mono); font-weight:500; }
+.circuit-on { color:var(--green); }
+.circuit-off { color:var(--muted); }
+
+/* LAAG TABEL */
+.lagen-card {
+  background:var(--card); border:1px solid var(--bdr); border-radius:14px;
+  overflow:hidden;
+}
+.lagen-row {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 14px; border-bottom:1px solid var(--bdr);
+  transition:background .2s;
+}
+.lagen-row:last-child { border-bottom:none; }
+.laag-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.laag-naam { font-size:12px; color:var(--muted); flex:1; }
+.laag-temp { font-family:var(--mono); font-size:14px; font-weight:500; text-align:right; }
+.laag-bar-wrap { width:50px; height:4px; background:var(--dim); border-radius:2px; overflow:hidden; }
+.laag-bar-fill { height:100%; border-radius:2px; transition:width .5s; }
+
+/* PORTAL SECTIE */
+.portal-section {
+  background:var(--card);
+  border:1px solid var(--bdr);
+  border-radius:14px;
+  margin-top:14px;
+  overflow:hidden;
+}
+.portal-header {
+  padding:10px 14px;
+  border-bottom:1px solid var(--bdr);
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.portal-link {
+  padding:10px 14px;
+  border-bottom:1px solid var(--bdr);
+  text-align:center;
+}
+.portal-link a {
+  color:var(--amber);
+  text-decoration:none;
+  font-size:13px;
+  font-family:var(--mono);
+}
+.portal-link a:hover { color:var(--text); }
+#portal-iframe {
+  width:100%;
+  height:calc(100vh - 84px);
+  border:none;
+  display:block;
+  background:#fff;
+}
+
+.refresh { text-align:center; padding:10px; font-size:11px; color:var(--muted); font-family:var(--mono); }
+
+@media (max-width: 800px) {
+  .main-row { flex-direction:column; }
+  .circuits-grid { grid-template-columns:repeat(auto-fit, minmax(70px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="/" class="back">←</a>
+  <div class="hdr-title">
+    <h1>HVAC Verwarming</h1>
+    <p id="ip-txt">192.168.0.70</p>
+  </div>
+  <div class="status-badge">
+    <div class="sdot" id="status-dot" style="background:#6b7f8e"></div>
+    <span id="status-txt">laden...</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- BOILER + STATS ROW -->
+  <div class="main-row">
+    
+    <!-- BOILER SVG -->
+    <div class="boiler-wrap">
+      <div class="boiler-title">SCH Boiler</div>
+      <div id="boiler-svg"></div>
+    </div>
+
+    <!-- STATS KOLOM -->
+    <div class="stats-col">
+      
+      <!-- TOTAAL VERMOGEN -->
+      <div class="info-card">
+        <div class="ic-label">Totaal vermogen</div>
+        <div>
+          <span class="ic-val" id="power-val">0.0</span>
+          <span class="ic-unit">kW</span>
+        </div>
+        <div class="ic-sub" id="power-sub">—</div>
+      </div>
+
+      <!-- VENTILATIE -->
+      <div class="info-card">
+        <div class="ic-label">Ventilatie</div>
+        <div>
+          <span class="ic-val" id="vent-val">0</span>
+          <span class="ic-unit">%</span>
+        </div>
+        <div class="ic-sub">PWM snelheid</div>
+      </div>
+
+      <!-- POMPEN STATUS -->
+      <div class="info-card">
+        <div class="ic-label">Pompen</div>
+        <div style="display:flex; gap:12px; margin-top:6px;">
+          <div style="flex:1;">
+            <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">SCH</div>
+            <div id="sch-pump-state" style="font-family:var(--mono); font-size:14px;">UIT</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">WON</div>
+            <div id="won-pump-state" style="font-family:var(--mono); font-size:14px;">UIT</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CIRCUITS GRID -->
+  <div class="circuits-card">
+    <div class="circuits-header">Verwarmingscircuits (7)</div>
+    <div class="circuits-grid" id="circuits-grid"></div>
+  </div>
+
+  <!-- LAAG TABEL -->
+  <div class="lagen-card">
+    <div class="lagen-row" style="background:var(--card2); border-bottom:1px solid var(--bdr);">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;">Boilerlagen — temperatuur</div>
+    </div>
+    <div id="lagen-body"></div>
+  </div>
+
+  <div class="refresh" id="refresh-txt">Vernieuwen elke 5s</div>
+
+  <!-- PORTAL SECTIE -->
+  <div class="portal-section">
+    <div class="portal-header">▸ Controller UI</div>
+    <div class="portal-link">
+      <a href="http://192.168.0.70/" target="_blank" id="portal-link">▸ HVAC controller ↗</a>
+    </div>
+    <iframe id="portal-iframe" src="http://192.168.0.70/" title="HVAC Controller"></iframe>
+  </div>
+
+</div>
+
+<!-- SVG DEFS voor animatie -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <linearGradient id="CircuitCoil" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="15%" stop-color="rgb(255,80,48)"/>
+    <stop offset="85%" stop-color="rgb(255,160,80)"/>
+  </linearGradient>
+</defs>
+</svg>
+
+<script>
+'use strict';
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const LAYER_NAMEN = ['KST1 (bovenkant)', 'KST2', 'KST3', 'KST4', 'KST5', 'KST6 (onderkant)'];
+const LAYER_KEYS  = ['b','c','d','e','f','g'];
+const CIRCUIT_KEYS = ['p','q','r','s','t','u','v'];
+const CIRCUIT_NAMEN = ['C1','C2','C3','C4','C5','C6','C7'];
+
+// ─── KLEURHELPER (identiek aan ECO) ─────────────────────────────────────────
+function tempColor(t) {
+  const min=20, max=80;
+  const x = Math.max(0, Math.min(1, (t-min)/(max-min)));
+  const hue = (1-x) * 200;
+  return `hsl(${hue},90%,50%)`;
+}
+
+function tempKleurCSS(t) {
+  if (t < 30) return '#4da6ff';
+  if (t < 45) return '#00d18c';
+  if (t < 60) return '#ffb030';
+  if (t < 70) return '#ff8030';
+  return '#ff4555';
+}
+
+// ─── SVG ICOON: HEATING ──────────────────────────────────────────────────────
+function drawheating(height, fill) {
+  const svg = `<svg viewBox="0 0 120 144" width="${height}" height="${Math.round(height*1.2)}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M6,42.28c0,0-6-7-6-12s5-14,14-14s16,12,16,18v56.083l14.584-13.083c-1.188-2.436-1.917-5.165-1.917-8.063
+	C42.667,57.531,50.198,50,59.884,50c9.686,0,17.45,7.531,17.45,19.217c0,2.899-0.73,5.628-1.917,8.063l15.25,13.083V33.28
+	c0-6,7-18,16-18s14,9,14,14s-6,12-6,12v90c0,6.627-5.373,12-12,12H18c-6.627,0-12-5.373-12-12V42.28z"/>
+  </svg>`;
+  return svg;
+}
+
+// ─── BOILER SVG (identiek aan ECO) ──────────────────────────────────────────
+function drawCoil(outerWidth, outerHeight, borderWidth, borderHeight, nCoils, direction) {
+  const deltaHeight = (outerHeight - borderHeight*2) / (nCoils*2);
+  let coilLines;
+  if (direction === 1) {
+    coilLines = `M 10 ${borderHeight} L ${borderWidth} ${borderHeight} `;
+    for (let i=0; i<nCoils; i++) {
+      coilLines += `L ${outerWidth-borderWidth} ${borderHeight+deltaHeight*(i*2+1)} `;
+      coilLines += `L ${borderWidth} ${borderHeight+deltaHeight*(i*2+2)} `;
+    }
+    coilLines += `L 10 ${outerHeight-borderHeight}`;
+  } else {
+    coilLines = `M ${outerWidth-10} ${borderHeight} L ${outerWidth-borderWidth} ${borderHeight} `;
+    for (let i=0; i<nCoils; i++) {
+      coilLines += `L ${borderWidth} ${borderHeight+deltaHeight*(i*2+1)} `;
+      coilLines += `L ${outerWidth-borderWidth} ${borderHeight+deltaHeight*(i*2+2)} `;
+    }
+    coilLines += `L ${outerWidth-10} ${outerHeight-borderHeight}`;
+  }
+  return coilLines;
+}
+
+function tekenBoiler(temps, circuitsAan) {
+  const W = 200, H = 480;
+  const bwBorder = 20, bhBorder = 40;
+  const usableH = H - 2*bhBorder;
+  const layerH  = usableH / 6;
+
+  const tankPath = `M 20 ${bhBorder} C ${bwBorder} 0, ${W-bwBorder} 0, ${W-bwBorder} ${bhBorder}
+    V ${H-bhBorder} C ${W-bwBorder} ${H}, ${bwBorder} ${H}, ${bwBorder} ${H-bhBorder} Z`;
+
+  let defs = `<clipPath id="tankClip"><path d="${tankPath}"/></clipPath>`;
+  let layers = '';
+
+  for (let i=0; i<6; i++) {
+    const t  = temps[i];
+    const c1 = tempColor(t+2);
+    const c2 = tempColor(t-2);
+    const gid = `g${i}`;
+    defs += `<linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="${c1}"/>
+      <stop offset="100%" stop-color="${c2}"/>
+    </linearGradient>`;
+    const y = bhBorder + i*layerH;
+    layers += `<rect x="0" y="${y}" width="${W}" height="${layerH}" fill="url(#${gid})" opacity="0.72"/>`;
+  }
+
+  // Scheidingslijnen tussen lagen
+  let dividers = '';
+  for (let i=1; i<6; i++) {
+    const y = bhBorder + i*layerH;
+    dividers += `<line x1="20" y1="${y}" x2="${W-20}" y2="${y}" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>`;
+  }
+
+  // Temperatuurlabels rechts van boiler
+  let labels = '';
+  for (let i=0; i<6; i++) {
+    const y = bhBorder + i*layerH + layerH/2;
+    const klr = tempKleurCSS(temps[i]);
+    labels += `<text x="${W+8}" y="${y}" fill="${klr}" font-size="13" font-family="DM Mono, monospace" font-weight="500" dominant-baseline="middle">${temps[i].toFixed(1)}°</text>`;
+  }
+
+  const coilPath  = drawCoil(W, H, 45, 70, 14, 1);
+  const coilClass = circuitsAan ? 'circuit-coil' : 'circuit-coil-off';
+
+  return `<svg width="${W+60}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>${defs}</defs>
+    <path d="${tankPath}" stroke="rgba(255,255,255,0.15)" stroke-width="2" fill="rgba(255,255,255,0.04)"/>
+    <g clip-path="url(#tankClip)">${layers}</g>
+    ${dividers}
+    <path d="${tankPath}" stroke="rgba(255,255,255,0.1)" stroke-width="1" fill="none"/>
+    <path class="${coilClass}" d="${coilPath}"/>
+    ${labels}
+  </svg>`;
+}
+
+// ─── UI UPDATEN ───────────────────────────────────────────────────────────────
+function updateUI(data) {
+  const temps = LAYER_KEYS.map(k => parseFloat(data[k]) || 0);
+  const circuits = CIRCUIT_KEYS.map(k => parseInt(data[k]) === 1);
+  const anyCircuitOn = circuits.some(c => c);
+  const totalPower = parseFloat(data.w) || 0;
+  const ventPct = parseInt(data.x) || 0;
+  const schOn = parseInt(data.y) === 1;
+  const wonOn = parseInt(data.aa) === 1;
+
+  // Boiler SVG
+  document.getElementById('boiler-svg').innerHTML = tekenBoiler(temps, anyCircuitOn);
+
+  // Totaal vermogen
+  document.getElementById('power-val').textContent = totalPower.toFixed(1);
+  const activeCount = circuits.filter(c => c).length;
+  document.getElementById('power-sub').textContent = `${activeCount} van 7 circuits actief`;
+
+  // Ventilatie
+  document.getElementById('vent-val').textContent = ventPct;
+
+  // Pompen
+  const schEl = document.getElementById('sch-pump-state');
+  schEl.textContent = schOn ? 'AAN' : 'UIT';
+  schEl.style.color = schOn ? 'var(--green)' : 'var(--muted)';
+  
+  const wonEl = document.getElementById('won-pump-state');
+  wonEl.textContent = wonOn ? 'AAN' : 'UIT';
+  wonEl.style.color = wonOn ? 'var(--green)' : 'var(--muted)';
+
+  // Circuits grid
+  const grid = document.getElementById('circuits-grid');
+  grid.innerHTML = '';
+  circuits.forEach((isOn, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'circuit-cell';
+    const color = isOn ? '#ff8030' : '#4da6ff';
+    cell.innerHTML = `
+      <div class="circuit-icon">${drawheating(32, color)}</div>
+      <div class="circuit-label">${CIRCUIT_NAMEN[idx]}</div>
+      <div class="circuit-state ${isOn ? 'circuit-on' : 'circuit-off'}">${isOn ? 'AAN' : 'UIT'}</div>
+    `;
+    grid.appendChild(cell);
+  });
+
+  // Lagenkaart
+  const body = document.getElementById('lagen-body');
+  body.innerHTML = '';
+  temps.forEach((t, idx) => {
+    const klr = tempKleurCSS(t);
+    const pct = Math.min(100, Math.max(0, (t-20)/60 * 100));
+    const row = document.createElement('div');
+    row.className = 'lagen-row';
+    row.innerHTML = `
+      <div class="laag-dot" style="background:${klr}"></div>
+      <div class="laag-naam">${LAYER_NAMEN[idx]}</div>
+      <div class="laag-temp">${t.toFixed(1)}°C</div>
+      <div class="laag-bar-wrap">
+        <div class="laag-bar-fill" style="width:${pct}%; background:${klr};"></div>
+      </div>
+    `;
+    body.appendChild(row);
+  });
+
+  // Status badge
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-txt');
+  dot.style.background = '#00d18c';
+  txt.textContent = 'online';
+}
+
+// ─── POLL DATA ───────────────────────────────────────────────────────────────
+async function pollData() {
+  try {
+    const resp = await fetch('/api/poll/hvac');
+    if (!resp.ok) throw new Error('Network error');
+    const data = await resp.json();
+    updateUI(data);
+  } catch (err) {
+    console.error('Poll error:', err);
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-txt');
+    dot.style.background = '#ff4555';
+    txt.textContent = 'offline';
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+pollData();
+setInterval(pollData, 5000);
+</script>
+
+</body>
+</html>
