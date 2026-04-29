@@ -153,6 +153,43 @@
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.4);
 }
+
+/* PORTAL SECTIE */
+.portal-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 14px 16px;
+  overflow: hidden;
+}
+.portal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.portal-link {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.portal-link a {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+.portal-link a:hover { color: #e2e8f0; }
+#portal-iframe {
+  width: 100%;
+  height: calc(100vh - 84px);
+  border: none;
+  display: block;
+  background: #fff;
+}
 </style>
 </head>
 <body>
@@ -334,17 +371,17 @@ function berekenKolom(col, data) {
       return lightbar(data.a / 6000, '#00c896');
     
     case 1: // SCH↓ (afname kW, 0-10kW, rood)
-      return lightbar(data.c / 10000, '#ff4558');
+      return lightbar(data.e / 10000, '#ff4558');
     
     case 2: // SCH↑ (injectie kW, 0-6kW, groen)
-      return lightbar(data.d / 6000, '#00c896');
+      return lightbar(data.f / 6000, '#00c896');
     
     case 3: // WON↓ (afname kW, 0-10kW, rood)
-      const won_afname = Math.max(0, data.b || 0);
+      const won_afname = Math.max(0, data.won_w || 0);
       return lightbar(won_afname / 10000, '#ff4558');
     
     case 4: // WON↑ (injectie kW, 0-6kW, groen/amber)
-      const won_injectie = Math.max(0, -(data.b || 0));
+      const won_injectie = Math.max(0, -(data.won_w || 0));
       if (data.sim_p1 === 1) {
         // Simulatie: dim amber (toekomst ~2028)
         return [BLK, BLK, BLK, '#3a2a00'];
@@ -352,7 +389,7 @@ function berekenKolom(col, data) {
       return lightbar(won_injectie / 6000, '#00c896');
     
     case 5: // PIEK (status 15kW, groen OK / rood alarm)
-      const piek_pct = (data.pt || 0) / 15000;
+      const piek_pct = (data.piek_w || 0) / 15000;
       if (piek_pct <= 1.0) {
         // OK: 1 groen pixel onderaan
         pixels[3] = '#00c896';
@@ -364,12 +401,12 @@ function berekenKolom(col, data) {
       return pixels;
     
     case 6: // ct/kWh (all-in prijs, 0-40ct, kleurgradiënt)
-      const ct = data.n / 100 || 0;
+      const ct = data.epex_nu || 0;
       const kleur = epexKleur(ct);
       return lightbar(Math.min(1, ct / 40), kleur);
     
     case 7: // HUIS (advies groen/rood)
-      const goed = (data.n / 100 < 15) || (data.a > 1500);
+      const goed = (data.epex_nu < 15) || (data.a > 1500);
       const huis_kleur = goed ? '#00c896' : '#ff4558';
       return lightbar(goed ? 1 : 0.25, huis_kleur);
     
@@ -377,14 +414,14 @@ function berekenKolom(col, data) {
       return ['#2a1040', '#2a1040', '#2a1040', '#2a1040'];
     
     case 9: // HEAP (0-60KB, groen/amber/rood)
-      const heap_pct = Math.min(1, (data.ae || 0) / 60000);
+      const heap_pct = Math.min(1, (data.heap || 0) / 60000);
       const heap_kleur = heap_pct > 0.5 ? '#00c896' 
                        : heap_pct > 0.3 ? '#ffb830' 
                        : '#ff4558';
       return lightbar(heap_pct, heap_kleur);
     
     case 10: // WiFi (RSSI -90→-60 dBm)
-      const rssi = data.ac || -90;
+      const rssi = data.rssi || -90;
       const rssi_pct = Math.max(0, Math.min(1, (rssi + 90) / 30));
       const wifi_kleur = rssi >= -60 ? '#00c896'
                        : rssi >= -75 ? '#ffb830'
@@ -468,9 +505,9 @@ function updateInfo() {
     `<span style="color:var(--green)">${(_data.a || 0).toFixed(0)} W</span>`;
   
   // EPEX
-  const epex_kleur = epexKleur(_data.n / 100 || 0);
+  const epex_kleur = epexKleur(_data.epex_nu || 0);
   document.getElementById('info-epex').innerHTML = 
-    `<span style="color:${epex_kleur}">${(_data.n / 100 || 0).toFixed(1)} ct/kWh</span>`;
+    `<span style="color:${epex_kleur}">${(_data.epex_nu || 0).toFixed(1)} ct/kWh</span>`;
   
   // Timestamp
   document.getElementById('info-ts').textContent = zarlarTs(_lastUpdate);
@@ -481,6 +518,15 @@ initMatrix();
 zarlarClock('ts');
 zarlarAutoRefresh(15, pollData);
 </script>
+
+<!-- PORTAL SECTIE -->
+<div class="portal-section">
+  <div class="portal-header">▸ Controller UI</div>
+  <div class="portal-link">
+    <a href="http://192.168.0.73/" target="_blank">▸ S-ENERGY controller ↗</a>
+  </div>
+  <iframe id="portal-iframe" src="http://192.168.0.73/" title="S-ENERGY Controller"></iframe>
+</div>
 
 </body>
 </html>

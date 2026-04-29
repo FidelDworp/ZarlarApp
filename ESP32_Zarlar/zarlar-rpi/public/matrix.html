@@ -160,6 +160,43 @@ tr.sep td { height: 6px; }
 }
 .leg-item { display:flex; align-items:center; gap:5px; }
 .leg-dot  { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+
+/* PORTAL SECTIE */
+.portal-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 14px 16px;
+  overflow: hidden;
+}
+.portal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.portal-link {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.portal-link a {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+.portal-link a:hover { color: #e2e8f0; }
+#portal-iframe {
+  width: 100%;
+  height: calc(100vh - 84px);
+  border: none;
+  display: block;
+  background: #fff;
+}
 </style>
 </head>
 <body>
@@ -608,5 +645,15 @@ function bouwLegenda() {
 laadMatrix();
 setInterval(laadMatrix, 15000); // refresh elke 15s
 </script>
+
+<!-- PORTAL SECTIE -->
+<div class="portal-section">
+  <div class="portal-header">▸ Controller UI</div>
+  <div class="portal-link">
+    <a href="http://192.168.0.60/" target="_blank">▸ Dashboard controller ↗</a>
+  </div>
+  <iframe id="portal-iframe" src="http://192.168.0.60/" title="Dashboard Controller"></iframe>
+</div>
+
 </body>
 </html>

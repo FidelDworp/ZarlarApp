@@ -1082,7 +1082,7 @@ function bouwSyn(s) {
     },
     // S-ENERGY — live solar + netto + EPEX
     {
-      naam: 'S-ENERGY', link: '/matrix.html', kl: senrg.online ? 'ok' : 'err',
+      naam: 'S-ENERGY', link: '/12x4_matrix.html', kl: senrg.online ? 'ok' : 'err',
       icon: () => {
         const sol  = parseInt(senrg.a) || 0;
         const net  = parseInt(senrg.e) || 0;
@@ -1141,7 +1141,7 @@ function bouwSyn(s) {
     },
     // WiFi / Dashboard
     {
-      naam: 'Dashboard', link: '#', kl: 'wt',
+      naam: 'Dashboard', link: '/matrix.html', kl: 'wt',
       icon: () => {
         const r = parseInt(hvac.ac)||parseInt(eco.p)||-72;
         const klr = rssiKleur(r);
