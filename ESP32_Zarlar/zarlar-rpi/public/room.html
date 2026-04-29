@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Zarlar — Eetplaats</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0d12;
+  --card:  #111620;
+  --card2: #161d28;
+  --bdr:   rgba(255,255,255,0.07);
+  --text:  #e8eef4;
+  --muted: #6b7f8e;
+  --dim:   #1e2a36;
+  --green: #00d18c;
+  --amber: #ffb030;
+  --red:   #ff4555;
+  --blue:  #4da6ff;
+  --font:  'DM Sans', sans-serif;
+  --mono:  'DM Mono', monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; min-height:100%; }
+
+/* HEADER */
+.hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 12px; border-bottom:1px solid var(--bdr); }
+.back { width:34px; height:34px; border-radius:50%; background:var(--card); border:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; text-decoration:none; color:var(--muted); }
+.back:hover { color:var(--text); border-color:rgba(255,255,255,0.15); }
+.hdr-title { flex:1; }
+.hdr-title h1 { font-size:16px; font-weight:600; }
+.hdr-title p  { font-size:11px; color:var(--muted); margin-top:1px; font-family:var(--mono); }
+.status-badge { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); font-family:var(--mono); }
+.sdot { width:7px; height:7px; border-radius:50%; }
+
+/* CONTENT */
+.content { padding:14px; }
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* INFO CARD met SVG icoon */
+.ic-card {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ic-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.ic-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.ic-value {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+}
+.ic-unit {
+  font-size: 13px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.ic-sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* SWITCHES SECTIE */
+.switches-card {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.sw-header {
+  padding: 10px 14px;
+  background: var(--card2);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--bdr);
+}
+.sw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1px;
+  background: var(--bdr);
+}
+.sw-cell {
+  background: var(--card);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.sw-icon { width: 28px; height: 28px; }
+.sw-label { font-size: 10px; color: var(--muted); }
+.sw-state { font-size: 12px; font-family: var(--mono); font-weight: 500; }
+.sw-on { color: var(--green); }
+.sw-off { color: var(--muted); }
+
+/* PORTAL SECTIE */
+.portal-section {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  margin-top: 14px;
+  overflow: hidden;
+}
+.portal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.portal-link {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+.portal-link a {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+.portal-link a:hover { color: var(--text); }
+#portal-iframe {
+  width: 100%;
+  height: calc(100vh - 84px);
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+.refresh { text-align: center; padding: 10px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="/" class="back">←</a>
+  <div class="hdr-title">
+    <h1 id="room-name">Room</h1>
+    <p id="ip-txt">192.168.0.XX</p>
+  </div>
+  <div class="status-badge">
+    <div class="sdot" id="status-dot" style="background:#6b7f8e"></div>
+    <span id="status-txt">laden...</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- STATS GRID -->
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <!-- SWITCHES -->
+  <div class="switches-card">
+    <div class="sw-header">Status schakelaars</div>
+    <div class="sw-grid" id="switches-grid"></div>
+  </div>
+
+  <div class="refresh" id="refresh-txt">Vernieuwen elke 5s</div>
+
+  <!-- PORTAL SECTIE -->
+  <div class="portal-section">
+    <div class="portal-header">▸ Controller UI</div>
+    <div class="portal-link">
+      <a href="#" target="_blank" id="portal-link">▸ ROOM controller ↗</a>
+    </div>
+    <iframe id="portal-iframe" src="" title="ROOM Controller"></iframe>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ─── URL PARAMETERS ──────────────────────────────────────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('id') || '80';
+const roomName = urlParams.get('name') || 'Room';
+
+// Room configuratie
+const ROOMS = {
+  '75': 'Bed & Breakfast',
+  '76': 'Badkamer',
+  '77': 'Inkomhal',
+  '78': 'Keuken',
+  '79': 'Wasplaats',
+  '80': 'Eetplaats',
+  '81': 'Zitplaats'
+};
+
+const displayName = ROOMS[roomId] || roomName;
+const roomIP = `192.168.0.${roomId}`;
+const apiEndpoint = `/api/poll/room${roomId}`;
+
+// Update UI met room info
+document.getElementById('room-name').textContent = displayName;
+document.getElementById('ip-txt').textContent = roomIP;
+document.getElementById('portal-link').href = `http://${roomIP}/`;
+document.getElementById('portal-link').textContent = `▸ ${displayName} controller ↗`;
+document.getElementById('portal-iframe').src = `http://${roomIP}/`;
+
+// ─── SVG ICOON FUNCTIES ──────────────────────────────────────────────────────
+
+function drawTemperature(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M76,60V20c0-11.046-8.954-20-20-20s-20,8.954-20,20v40c-7.732,4.909-12.856,13.442-12.856,23.065
+	C23.144,98.699,37.711,113.266,53.345,113.266c15.634,0,30.201-14.567,30.201-30.201C83.546,73.442,83.732,64.909,76,60z M56,100
+	c-9.389,0-17-7.611-17-17c0-6.295,3.472-11.786,8.581-14.717c0.775-0.445,1.253-1.27,1.253-2.166V20c0-3.86,3.14-7,7-7s7,3.14,7,7
+	v46.117c0,0.896,0.478,1.721,1.253,2.166C69.196,71.214,73,76.705,73,83C73,92.389,65.389,100,56,100z"/>
+  </svg>`;
+}
+
+function drawHumidity(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M60,0C37.5,28.125,15,56.25,15,82.5C15,108.75,35.25,129,60,129s45-20.25,45-46.5
+	C105,56.25,82.5,28.125,60,0z M60,115.5c-18.225,0-33-14.775-33-33c0-18.225,33-63,33-63s33,44.775,33,63
+	C93,100.725,78.225,115.5,60,115.5z"/>
+  </svg>`;
+}
+
+function drawCO2(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M96,72c0-19.882-16.118-36-36-36S24,52.118,24,72s16.118,36,36,36S96,91.882,96,72z M60,96
+	c-13.234,0-24-10.766-24-24s10.766-24,24-24s24,10.766,24,24S73.234,96,60,96z M60,60c-6.627,0-12,5.373-12,12s5.373,12,12,12
+	s12-5.373,12-12S66.627,60,60,60z"/>
+    <circle fill="${fill}" cx="60" cy="36" r="6"/>
+    <circle fill="${fill}" cx="60" cy="108" r="6"/>
+    <circle fill="${fill}" cx="24" cy="72" r="6"/>
+    <circle fill="${fill}" cx="96" cy="72" r="6"/>
+  </svg>`;
+}
+
+function drawLighting(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M60,0C35.148,0,15,20.148,15,45c0,16.569,9.032,31.042,22.5,38.917V120c0,6.627,5.373,12,12,12h21
+	c6.627,0,12-5.373,12-12V83.917C96.468,76.042,105,61.569,105,45C105,20.148,84.852,0,60,0z M60,72c-14.912,0-27-12.088-27-27
+	s12.088-27,27-27s27,12.088,27,27S74.912,72,60,72z"/>
+  </svg>`;
+}
+
+function drawMovement(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M60,30c-19.882,0-36,16.118-36,36s16.118,36,36,36s36-16.118,36-36S79.882,30,60,30z M60,90
+	c-13.234,0-24-10.766-24-24s10.766-24,24-24s24,10.766,24,24S73.234,90,60,90z"/>
+    <circle fill="${fill}" cx="60" cy="66" r="8"/>
+    <path fill="${fill}" d="M60,0L45,18h30L60,0z"/>
+    <path fill="${fill}" d="M60,132l15-18H45L60,132z"/>
+    <path fill="${fill}" d="M12,66l18-15v30L12,66z"/>
+    <path fill="${fill}" d="M108,66l-18,15V51L108,66z"/>
+  </svg>`;
+}
+
+function drawHeating(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M6,42.28c0,0-6-7-6-12s5-14,14-14s16,12,16,18v56.083l14.584-13.083c-1.188-2.436-1.917-5.165-1.917-8.063
+	C42.667,57.531,50.198,50,59.884,50c9.686,0,17.45,7.531,17.45,19.217c0,2.899-0.73,5.628-1.917,8.063l15.25,13.083V33.28
+	c0-6,7-18,16-18s14,9,14,14s-6,12-6,12v90c0,6.627-5.373,12-12,12H18c-6.627,0-12-5.373-12-12V42.28z"/>
+  </svg>`;
+}
+
+function drawHome(size, fill) {
+  return `<svg viewBox="0 0 120 144" width="${size}" height="${size*1.2}" xmlns="http://www.w3.org/2000/svg">
+    <path fill="${fill}" d="M108,60L60,18L12,60v60c0,6.627,5.373,12,12,12h72c6.627,0,12-5.373,12-12V60z M84,108H36V72h48V108z"/>
+  </svg>`;
+}
+
+// ─── KLEURHELPERS ────────────────────────────────────────────────────────────
+
+function tempColor(t) {
+  if (t < 10) return '#4da6ff';
+  if (t < 18) return '#00d18c';
+  if (t < 22) return '#ffb030';
+  if (t < 26) return '#ff8030';
+  return '#ff4555';
+}
+
+function humiColor(h) {
+  if (h < 30) return '#ff8030';
+  if (h < 50) return '#00d18c';
+  if (h < 70) return '#ffb030';
+  return '#ff4555';
+}
+
+function co2Color(c) {
+  if (c === 0) return '#6b7f8e';
+  if (c < 800) return '#00d18c';
+  if (c < 1200) return '#ffb030';
+  if (c < 1500) return '#ff8030';
+  return '#ff4555';
+}
+
+function lightColor(lux) {
+  if (lux < 10) return '#2a3f5f';
+  if (lux < 100) return '#4da6ff';
+  if (lux < 500) return '#ffb030';
+  return '#ffd030';
+}
+
+// ─── UI UPDATEN ───────────────────────────────────────────────────────────────
+
+function updateUI(data) {
+  // Status badge
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-txt');
+  dot.style.background = '#00d18c';
+  txt.textContent = 'online';
+
+  const temp_dht = parseFloat(data.e) || 0;
+  const temp_ds = parseFloat(data.f) || 0;
+  const humi = parseInt(data.h) || 0;
+  const co2 = parseInt(data.k) || 0;
+  const sun_light = parseInt(data.n) || 0;
+  const mov1_triggers = parseInt(data.w) || 0;
+  const mov2_triggers = parseInt(data.x) || 0;
+
+  // STATS GRID
+  const statsData = [
+    { icon: drawTemperature(36, tempColor(temp_dht)), label: 'Temperatuur DHT22', value: temp_dht.toFixed(1), unit: '°C', sub: '' },
+    { icon: drawTemperature(36, tempColor(temp_ds)), label: 'Temperatuur DS18B20', value: temp_ds.toFixed(1), unit: '°C', sub: '' },
+    { icon: drawHumidity(36, humiColor(humi)), label: 'Vochtigheid', value: humi, unit: '%', sub: '' },
+    { icon: drawCO2(36, co2Color(co2)), label: 'CO₂', value: co2, unit: 'ppm', sub: co2 === 0 ? 'sensor uit' : '' },
+    { icon: drawLighting(36, lightColor(sun_light)), label: 'Zonlicht', value: sun_light, unit: 'lux', sub: '' },
+    { icon: drawMovement(36, mov1_triggers > 0 ? '#ffb030' : '#6b7f8e'), label: 'MOV1 triggers', value: mov1_triggers, unit: '/min', sub: '' },
+    { icon: drawMovement(36, mov2_triggers > 0 ? '#ffb030' : '#6b7f8e'), label: 'MOV2 triggers', value: mov2_triggers, unit: '/min', sub: '' },
+  ];
+
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = statsData.map(s => `
+    <div class="ic-card">
+      <div class="ic-header">
+        <div class="ic-label">${s.label}</div>
+        <div class="ic-icon">${s.icon}</div>
+      </div>
+      <div>
+        <span class="ic-value">${s.value}</span>
+        <span class="ic-unit">${s.unit}</span>
+      </div>
+      ${s.sub ? `<div class="ic-sub">${s.sub}</div>` : ''}
+    </div>
+  `).join('');
+
+  // SWITCHES GRID
+  const heating_on = parseInt(data.b) === 1;
+  const home_mode = parseInt(data.v) === 1;
+  const night = parseInt(data.o) === 1;
+  const bed = parseInt(data.p) === 1;
+
+  const switches = [
+    { icon: drawHeating(28, heating_on ? '#ff8030' : '#4da6ff'), label: 'Verwarming', state: heating_on },
+    { icon: drawHome(28, home_mode ? '#00d18c' : '#6b7f8e'), label: 'Thuis', state: home_mode },
+    { icon: drawLighting(28, night ? '#4da6ff' : '#ffd030'), label: 'Nacht', state: night },
+    { icon: drawHome(28, bed ? '#ff8030' : '#00d18c'), label: 'Bed', state: bed },
+  ];
+
+  const swGrid = document.getElementById('switches-grid');
+  swGrid.innerHTML = switches.map(sw => `
+    <div class="sw-cell">
+      <div class="sw-icon">${sw.icon}</div>
+      <div class="sw-label">${sw.label}</div>
+      <div class="sw-state ${sw.state ? 'sw-on' : 'sw-off'}">${sw.state ? 'AAN' : 'UIT'}</div>
+    </div>
+  `).join('');
+}
+
+// ─── POLL DATA ───────────────────────────────────────────────────────────────
+
+async function pollData() {
+  try {
+    const resp = await fetch(apiEndpoint);
+    if (!resp.ok) throw new Error('Network error');
+    const data = await resp.json();
+    updateUI(data);
+  } catch (err) {
+    console.error('Poll error:', err);
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-txt');
+    dot.style.background = '#ff4555';
+    txt.textContent = 'offline';
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+pollData();
+setInterval(pollData, 5000);
+</script>
+
+</body>
+</html>

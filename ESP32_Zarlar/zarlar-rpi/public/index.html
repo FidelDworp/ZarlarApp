@@ -1122,15 +1122,51 @@ function bouwSyn(s) {
         return `${sol}W zon · ${ct}ct${sim}`;
       }
     },
-    // Room
+    // Rooms (7 stuks)
     {
-      naam: 'Eetplaats', link: '#', kl: room.online ? 'ok' : 'err',
+      naam: 'B&B', link: '/room.html?id=75&name=Bed%20%26%20Breakfast', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 75'
+    },
+    {
+      naam: 'Badkamer', link: '/room.html?id=76&name=Badkamer', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 76'
+    },
+    {
+      naam: 'Inkomhal', link: '/room.html?id=77&name=Inkomhal', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 77'
+    },
+    {
+      naam: 'Keuken', link: '/room.html?id=78&name=Keuken', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 78'
+    },
+    {
+      naam: 'Wasplaats', link: '/room.html?id=79&name=Wasplaats', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 79'
+    },
+    {
+      naam: 'Eetplaats', link: '/room.html?id=80&name=Eetplaats', kl: room.online ? 'ok' : 'err',
       icon: () => {
         const t = parseFloat(room.f)||parseFloat(room.e)||20;
         return drawhome(40, tc(t));
       },
       val: () => room.online ? `${(parseFloat(room.f)||0).toFixed(1)}°C` : '—',
       sub: () => room.online ? `${parseInt(room.h)||0}% vocht` : 'offline'
+    },
+    {
+      naam: 'Zitplaats', link: '/room.html?id=81&name=Zitplaats', kl: 'dim',
+      icon: () => drawhome(40, '#6b7f8e'),
+      val: () => '—',
+      sub: () => 'room 81'
     },
     // Solar
     {

@@ -127,6 +127,43 @@ html,body { background:var(--bg); color:var(--text); font-family:var(--font); -w
 
 /* REFRESH INDICATOR */
 .refresh { font-size:10px; color:var(--muted); text-align:center; padding:10px; font-family:var(--mono); }
+
+/* PORTAL SECTIE */
+.portal-section {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  margin: 14px 16px;
+  overflow: hidden;
+}
+.portal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.portal-link {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+.portal-link a {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+.portal-link a:hover { color: #e2e8f0; }
+#portal-iframe {
+  width: 100%;
+  height: calc(100vh - 84px);
+  border: none;
+  display: block;
+  background: #fff;
+}
 </style>
 </head>
 <body>
@@ -417,5 +454,15 @@ async function laad() {
 laad();
 setInterval(laad, 5000);
 </script>
+
+<!-- PORTAL SECTIE -->
+<div class="portal-section">
+  <div class="portal-header">▸ Controller UI</div>
+  <div class="portal-link">
+    <a href="http://192.168.0.71/" target="_blank">▸ ECO Boiler controller ↗</a>
+  </div>
+  <iframe id="portal-iframe" src="http://192.168.0.71/" title="ECO Boiler Controller"></iframe>
+</div>
+
 </body>
 </html>
