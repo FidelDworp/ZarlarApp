@@ -371,13 +371,13 @@ function berekenKolom(col, data) {
       return lightbar(data.a / 6000, '#00c896');
     
     case 1: // SCH↓ (afname kW, 0-10kW, rood)
-      return lightbar(data.e / 10000, '#ff4558');
+      return lightbar(data.c / 10000, '#ff4558');
     
     case 2: // SCH↑ (injectie kW, 0-6kW, groen)
-      return lightbar(data.f / 6000, '#00c896');
+      return lightbar(data.d / 6000, '#00c896');
     
     case 3: // WON↓ (afname kW, 0-10kW, rood)
-      const won_afname = Math.max(0, data.won_w || 0);
+      const won_afname = Math.max(0, data.b || 0);
       return lightbar(won_afname / 10000, '#ff4558');
     
     case 4: // WON↑ (injectie kW, 0-6kW, groen/amber)
