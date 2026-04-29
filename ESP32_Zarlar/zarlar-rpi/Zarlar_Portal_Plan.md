@@ -237,10 +237,10 @@ Via klik naar NIVO 2 pagina
 |---|---|---|
 | HVAC | `drawheating` | ⬜ /hvac.html |
 | ECO Boiler | Custom boiler SVG (6 lagen) | ✅ /eco.html |
-| Energie | `drawelectricenergy` | ✅ /epex-grafiek.html |
+| **S-ENERGY** | **`drawelectricenergy`** | **✅ /12x4_matrix.html (29/04)** |
 | Eetplaats | `drawhome` | ⬜ /room.html |
 | Zon | `drawSunlight` | ⬜ later |
-| Dashboard | `drawwifi` | ⬜ later |
+| **Dashboard** | **`drawwifi`** | **✅ /matrix.html (29/04)** |
 
 ### 4.5 NIVO 2a — ECO Boiler (eco.html) ✅
 
@@ -253,6 +253,39 @@ Via klik naar NIVO 2 pagina
 - PWM balk voor pompdebiet
 - Laag tabel: kleurbolletje + mini-balk + °C
 - Live via `/api/poll/eco` — demodata als offline
+
+### 4.6 NIVO 2b — S-ENERGY Matrix 12×4 (12x4_matrix.html) ✅ 29/04/2026
+
+**Live replica fysieke WS2812B matrix (48 pixels):**
+
+- 12 kolommen × 4 rijen = 48 pixels
+- Serpentine layout: rechts→links, afwisselend ↑↓ (verticaal per kolom)
+- Lightbar rendering: vult van onderaan (rij 3) naar boven (rij 0)
+
+**Kolommen:**
+1. ☀️ SOL (0-6kW groen)
+2. ⚡ SCH↓ (0-10kW rood afname)
+3. ⚡ SCH↑ (0-6kW groen injectie)
+4. 🏠 WON↓ (0-10kW rood afname)
+5. 🏠 WON↑ (0-6kW groen injectie, ~2028)
+6. 📊 PIEK (15kW status, groen OK / rood alarm)
+7. 💰 ct/kWh (0-40ct gradient cyaan→groen→geel→rood)
+8. 💡 HUIS (advies groen=goed / rood=duur)
+9. 🔋 BAT (dim paars toekomst)
+10. ❤️ HEAP (60KB ESP32 geheugen)
+11. 📶 WiFi (RSSI signaalsterkte)
+12. 🔴 SIM (S0/P1 status **bovenaan rij 0+1**, rood=SIM / groen=LIVE)
+
+**Features:**
+- Status info: badges (S0:SIM/LIVE · P1:SIM/LIVE), solar W, EPEX ct/kWh
+- Auto-refresh elke 15s via `/api/poll/senrg`
+- Legenda met kleurcodes
+- Gebruikt gedeelde `zarlar.css` + `zarlar.js`
+- Glow effect op actieve pixels
+
+**Link vanaf:**
+- index.html → S-ENERGY tegel → `/12x4_matrix.html`
+- epex-grafiek.html → "🔲 Bekijk live matrix 12×4 →" knop
 
 ---
 
@@ -334,10 +367,11 @@ public/
 ├── index.html          ← Systeem overzicht ✅
 ├── eco.html            ← ECO Boiler detail ✅
 ├── epex-grafiek.html   ← Energie grafiek ✅
+├── 12x4_matrix.html    ← S-ENERGY matrix 12×4 live replica ✅ 29/04
 ├── hvac.html           ← HVAC detail ⬜
 ├── room.html           ← Room detail ⬜
 ├── matrix/
-│   └── index.html      ← 16×16 matrix replica ⬜
+│   └── index.html      ← 16×16 matrix replica (matrix.html) ✅
 ├── verlichting/
 │   └── index.html      ← Gecombineerde verlichting ⬜
 ├── scenes/
@@ -428,7 +462,11 @@ ongeacht het uur of de marktprijs.
 
 ## 8. Technische context
 
-- **RPi:** Node.js v18 + Express + node-fetch@2
+**server.js v2.0:**
+- Alle room controllers toegevoegd (room75–room81, 192.168.0.75–.81)
+- Dashboard controller toegevoegd (192.168.0.60)
+- `/api/photon/:id` proxy endpoint — Cloudflare Worker via RPi (geen CORS issues)
+- `/api/matrix` endpoint — haalt alle ESP32 + Photon data parallel op in één call
 - **ESP32:** C6, Arduino IDE, `#define Serial Serial0` verplicht
 - **ESPAsyncWebServer** — geen MQTT, geen Home Assistant
 - **Nooit** `huge_app` partitie — gebruik `partitions_16mb.csv`
@@ -453,7 +491,8 @@ ongeacht het uur of de marktprijs.
 | 8 | Lichten tab verfijnen (pixel nicknames via NVS) | ⬜ Open |
 | 9 | Maarten + Céline uitnodigen op Tailscale | ⬜ Open |
 | 10 | `/capabilities` endpoint op ESP32 controllers | ⬜ Later |
-| 11 | Smart Energy controller — sketch v0.1 schrijven | ✅ Klaar (v1.25 SIM) |
+| **11** | **S-ENERGY controller — sketch v1.27 (matrix 12×4 definitief)** | **✅ Klaar 28/04** |
+| **11b** | **S-ENERGY portal pagina 12x4_matrix.html** | **✅ Klaar 29/04** |
 | 12 | S-ENERGY: maandelijkse pieken loggen naar stats bestand op RPi | ⬜ Later |
 | 13 | Afrekenpagina WON/SCH zichtbaar op portal voor Maarten en Céline | ⬜ Later |
 | 14 | S-ENERGY: echte S0 bekabeling + overschakelen van SIM naar LIVE | ⬜ Later |
@@ -476,9 +515,9 @@ ongeacht het uur of de marktprijs.
 | AP8 | `/capabilities` endpoint op ECO sketch |
 | AP9 | S-ENERGY: GPIO-pinnen toewijzen via OPTION RJ45 connector |
 | AP10 | S-ENERGY: interface printje met pull-up + serieweerstanden bouwen |
-| AP11 | S-ENERGY: sketch v0.1 schrijven (S0 pulstelling + LED matrix 12×4) |
-| AP11 | S-ENERGY: sketch v1.26 flashen op ESP32-C6 (192.168.0.73) |
-| AP12 | S-ENERGY: SIM_S0 + SIM_P1 valideren via /json badges op epex-pagina |
+| **AP11** | **S-ENERGY: sketch v1.27 — matrix 12×4 definitief** | **✅ Klaar 28/04** |
+| **AP12** | **S-ENERGY: SIM_S0 + SIM_P1 valideren via /json badges** | **✅ Klaar** |
+| **AP12b** | **Portal: 12x4_matrix.html live replica** | **✅ Klaar 29/04** |
 | AP13 | S-ENERGY: maandpiek per huis loggen (ps, pw, pt) naar stats-bestand RPi |
 | AP14 | Portal: afrekenpagina WON/SCH bouwen (zie §13) |
 | AP15 | S-ENERGY: S0 bekabeling aansluiten → sim_mode uitschakelen → v1.26 LIVE |
@@ -628,28 +667,34 @@ Klem 19 of 21 (S0−) ──── GND (gedeeld met ESP32 GND)
 Geen optocoupler — S0-uitgang van PRO380-S is zelf al optisch geïsoleerd.
 Verbinding via **OPTION RJ45** connector op het Zarlar shield.
 
-### 11.4 LED matrix
+### 11.4 LED matrix 12×4
 
-**Hardware:** 12×4 WS2812B matrix = **48 pixels**, serpentine datavolgorde.
+**Hardware:** 12×4 WS2812B matrix = **48 pixels**, verticale serpentine (rechts→links, afwisselend ↑↓).
+Pin: **IO2** (was IO4 in oudere versies).
 Connector: JST SM 3-pin (wit=DI, rood=+5V, blauw=GND).
 Voeding: aparte 5V (niet via shield PTC).
 
-| Pixel | Functie | Kleurlogica |
-|---|---|---|
-| 1 | ☀️ Solar vermogen | Uit→geel dim→groen helder |
-| 2 | 💰 EPEX prijs | Groen=goedkoop / geel=normaal / rood=duur |
-| 3 | ⚖️ Netto balans | Groen=injectie / rood=afname |
-| 4 | 🔋 Batterij (toekomst) | SOC kleurschaal |
-| 5 | ♨️ ECO boiler | Groen=aan / zwart=uit |
-| 6 | 🚙 EV WON | Groen gradient op laadvermogen |
-| 7 | 🚗 EV SCH | Idem |
-| 8 | 🏠 WP WON | Groen=aan / zwart=uit |
-| 9 | 🏚️ WP SCH | Groen=aan / zwart=uit |
-| 10 | 🍳 Koken? | Groen=goed moment / rood=duur of piek |
-| 11 | 👕 Wassen? | Zelfde logica |
-| 12 | 📊 Piek | Groen→geel→oranje→rood vs MAX_PIEK |
+**Kolomindeling (v1.27 definitief, 28 april 2026):**
 
-*Pixels 10–11 voor Céline en Mireille: groen = goed moment om te koken/wassen.*
+| Col | Emoji | Label | Bereik | Kleurlogica |
+|---|---|---|---|---|
+| 0 | ☀️ | SOL | 0-6kW | Groen lightbar |
+| 1 | ⚡ | SCH↓ | 0-10kW | Rood lightbar (afname) |
+| 2 | ⚡ | SCH↑ | 0-6kW | Groen lightbar (injectie) |
+| 3 | 🏠 | WON↓ | 0-10kW | Rood lightbar (afname) |
+| 4 | 🏠 | WON↑ | 0-6kW | Groen lightbar (injectie, ~2028) |
+| 5 | 📊 | PIEK | 15kW | Groen OK / rood alarm |
+| 6 | 💰 | ct/kWh | 0-40ct | Cyaan→groen→geel→oranje→rood |
+| 7 | 💡 | HUIS | OK | Groen=goed moment / rood=duur |
+| 8 | 🔋 | BAT | ~2028 | Dim paars (toekomst) |
+| 9 | ❤️ | HEAP | 60KB | Groen>50% / amber / rood |
+| 10 | 📶 | WiFi | -60dB | Groen≥-60 / amber / rood |
+| 11 | 🔴 | SIM | S0·P1 | **Bovenaan (rij 0+1)** rood=SIM / groen=LIVE |
+
+**Lightbar principe:** Vult van onderaan (rij 3) naar boven (rij 0).
+**Serpentine:** Pixel 0-3 = col 11 (↑), 4-7 = col 10 (↓), 8-11 = col 9 (↑), etc.
+
+**Web replica:** Live versie beschikbaar op `/12x4_matrix.html` (29 april 2026).
 
 ---
 
