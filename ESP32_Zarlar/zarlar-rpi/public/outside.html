@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Zarlar — Outside Sensor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0d12;
+  --card:  #111620;
+  --bdr:   rgba(255,255,255,0.07);
+  --text:  #e8eef4;
+  --muted: #6b7f8e;
+  --amber: #ffb030;
+  --font:  'DM Sans', sans-serif;
+  --mono:  'DM Mono', monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; min-height:100%; }
+
+/* HEADER */
+.hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 12px; border-bottom:1px solid var(--bdr); }
+.back { width:34px; height:34px; border-radius:50%; background:var(--card); border:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; text-decoration:none; color:var(--muted); }
+.back:hover { color:var(--text); border-color:rgba(255,255,255,0.15); }
+.hdr-title { flex:1; }
+.hdr-title h1 { font-size:16px; font-weight:600; }
+.hdr-title p  { font-size:11px; color:var(--muted); margin-top:1px; font-family:var(--mono); }
+.status-badge { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); font-family:var(--mono); }
+
+/* INFO SECTIE */
+.info-section {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  margin: 14px 16px;
+  padding: 16px;
+}
+.info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.info-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.info-text a {
+  color: var(--amber);
+  text-decoration: none;
+}
+.info-text a:hover {
+  text-decoration: underline;
+}
+
+/* DASHBOARD SECTIE */
+.dashboard-section {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  margin: 14px 16px;
+  overflow: hidden;
+}
+.dashboard-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.external-link {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 11px;
+  font-family: var(--mono);
+}
+.external-link:hover { color: var(--text); }
+#dashboard-iframe {
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 600px;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+/* PORTAL SECTIE (voor toekomstige ESP32 controller) */
+.portal-section {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  margin: 14px 16px;
+  overflow: hidden;
+  opacity: 0.5;
+}
+.portal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.portal-link {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+.portal-link a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: var(--mono);
+  pointer-events: none;
+}
+#portal-iframe-esp {
+  width: 100%;
+  height: 400px;
+  border: none;
+  display: block;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.placeholder {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="/" class="back">←</a>
+  <div class="hdr-title">
+    <h1>Outside Sensor</h1>
+    <p>Photon → ESP32-C6 (gepland)</p>
+  </div>
+  <div class="status-badge">
+    <span>🌤️ Buiten data</span>
+  </div>
+</div>
+
+<!-- INFO SECTIE -->
+<div class="info-section">
+  <div class="info-title">📍 Huidige setup</div>
+  <div class="info-text">
+    <p>Een <strong>Particle Photon</strong> controller meet zonlicht via de dakvlakramen in de inkomhal. Deze data bepaalt de automatische verlichting van het huis.</p>
+    <p style="margin-top:8px;">In de toekomst wordt dit vervangen door een uitgebreidere <strong>ESP32-C6 buitensensor</strong> (192.168.0.72) met temperatuur, vocht, lichtintensiteit en mogelijk weer-data.</p>
+  </div>
+</div>
+
+<!-- GITHUB PAGES DASHBOARD -->
+<div class="dashboard-section">
+  <div class="dashboard-header">
+    <span>☀️ Live Photon Dashboard</span>
+    <a href="https://fideldworp.github.io/Zarlardinge_Dashboards/S-OUTSIDE.html" target="_blank" class="external-link">Open volledig ↗</a>
+  </div>
+  <iframe 
+    id="dashboard-iframe" 
+    src="https://fideldworp.github.io/Zarlardinge_Dashboards/S-OUTSIDE.html" 
+    title="S-OUTSIDE Dashboard"
+    sandbox="allow-scripts allow-same-origin"
+  ></iframe>
+</div>
+
+<!-- TOEKOMSTIGE ESP32 CONTROLLER (disabled) -->
+<div class="portal-section">
+  <div class="portal-header">▸ Toekomstige ESP32 Controller UI (192.168.0.72)</div>
+  <div class="portal-link">
+    <a href="#">▸ S-OUTSIDE controller (nog niet actief)</a>
+  </div>
+  <div class="placeholder">
+    <div style="font-size:32px;margin-bottom:8px;">🔧</div>
+    <div>ESP32-C6 buitensensor nog niet geïnstalleerd</div>
+    <div style="font-size:11px;margin-top:4px;color:#4a5568;">Gepland IP: 192.168.0.72</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// Optioneel: detecteer als iframe laadt
+const iframe = document.getElementById('dashboard-iframe');
+iframe.onload = function() {
+  console.log('S-OUTSIDE dashboard geladen');
+};
+</script>
+
+</body>
+</html>
