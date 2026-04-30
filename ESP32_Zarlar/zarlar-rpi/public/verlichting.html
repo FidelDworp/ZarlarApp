@@ -48,11 +48,6 @@
       color: #10b981;
     }
 
-    .room-offline {
-      background: #ef444420;
-      color: #ef4444;
-    }
-
     .pixels-grid {
       display: flex;
       flex-direction: column;
@@ -125,28 +120,29 @@
       align-items: center;
     }
 
-    .color-picker-wrapper {
-      position: relative;
-    }
-
-    .color-preview {
+    .color-picker-input {
       width: 60px;
       height: 60px;
       border-radius: 8px;
       border: 2px solid var(--border);
       cursor: pointer;
-      transition: transform 0.1s;
+      padding: 0;
+      background: none;
     }
 
-    .color-preview:active {
-      transform: scale(0.95);
+    .color-picker-input::-webkit-color-swatch-wrapper {
+      padding: 0;
+      border-radius: 6px;
     }
 
-    .color-picker-input {
-      position: absolute;
-      opacity: 0;
-      width: 0;
-      height: 0;
+    .color-picker-input::-webkit-color-swatch {
+      border: none;
+      border-radius: 6px;
+    }
+
+    .color-picker-input::-moz-color-swatch {
+      border: none;
+      border-radius: 6px;
     }
 
     .color-values {
@@ -212,7 +208,7 @@
         <button class="back-btn" onclick="window.location.href='/'">←</button>
         <div>
           <h1>Verlichting</h1>
-          <p class="subtitle">Alle kamers</p>
+          <p class="subtitle">Alleen online kamers</p>
         </div>
       </div>
       <div class="header-right">
@@ -232,7 +228,7 @@
 // ─── ROOM STATE TRACKING ────────────────────────────────────────────────────
 const roomStates = {};
 
-// ─── AUTO-DISCOVERY VAN ACTIEVE ROOMS ──────────────────────────────────────
+// ─── AUTO-DISCOVERY - ALLEEN ONLINE ROOMS ──────────────────────────────────
 async function discoverRooms() {
   try {
     const resp = await fetch('/api/status');
@@ -241,13 +237,14 @@ async function discoverRooms() {
     const status = await resp.json();
     const rooms = [];
     
+    // Filter ALLEEN online rooms
     for (const [name, info] of Object.entries(status)) {
-      if (name.startsWith('room')) {
+      if (name.startsWith('room') && info.online) {
         const id = name.replace('room', '');
         rooms.push({
           id: parseInt(id),
           name: getRoomName(id),
-          online: info.online
+          online: true
         });
       }
     }
@@ -256,7 +253,7 @@ async function discoverRooms() {
     
   } catch (err) {
     console.error('Room discovery failed:', err);
-    return [{ id: 80, name: 'Eetplaats', online: false }];
+    return [];
   }
 }
 
@@ -273,15 +270,17 @@ function getRoomName(id) {
   return names[id] || `Room ${id}`;
 }
 
-// ─── ROOM DATA OPHALEN ──────────────────────────────────────────────────────
+// ─── ROOM DATA OPHALEN - ALLEEN ONLINE ROOMS ───────────────────────────────
 async function loadRooms() {
   const container = document.getElementById('rooms-container');
   container.innerHTML = '<div class="loading"><div style="font-size:24px;margin-bottom:8px;">⚡</div>Kamers laden...</div>';
 
-  const discoveredRooms = await discoverRooms();
+  // discoverRooms geeft alleen online rooms terug
+  const onlineRooms = await discoverRooms();
   const activeRooms = [];
 
-  for (const room of discoveredRooms) {
+  // Poll alleen deze online rooms
+  for (const room of onlineRooms) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -316,12 +315,9 @@ async function loadRooms() {
         };
         
         activeRooms.push({ ...room, data, capabilities, online: true });
-      } else {
-        activeRooms.push({ ...room, data: null, capabilities: null, online: false });
       }
     } catch (err) {
-      console.log(`Room${room.id} niet bereikbaar:`, err.message);
-      activeRooms.push({ ...room, data: null, capabilities: null, online: false });
+      console.log(`Room${room.id} poll error:`, err.message);
     }
   }
 
@@ -329,8 +325,8 @@ async function loadRooms() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">💡</div>
-        <div class="empty-text">Geen room controllers gevonden</div>
-        <div class="empty-sub">Check de Dashboard controller</div>
+        <div class="empty-text">Geen online room controllers</div>
+        <div class="empty-sub">Check of room controllers aan staan</div>
       </div>
     `;
     return;
@@ -341,22 +337,6 @@ async function loadRooms() {
 
 // ─── ROOM CARD RENDEREN ─────────────────────────────────────────────────────
 function renderRoom(room) {
-  if (!room.online || !room.data) {
-    return `
-      <div class="room-card">
-        <div class="room-header">
-          <div class="room-name">${room.name}</div>
-          <div class="room-status room-offline">● offline</div>
-        </div>
-        <div class="room-body">
-          <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">
-            Controller niet bereikbaar
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   const data = room.data;
   const caps = room.capabilities;
   const state = roomStates[room.id];
@@ -424,19 +404,13 @@ function renderRoom(room) {
         <div class="color-section">
           <div class="color-header">🎨 Kleur alle pixels</div>
           <div class="color-controls">
-            <div class="color-picker-wrapper">
-              <div class="color-preview" 
+            <input type="color" 
+                   id="picker-${room.id}" 
+                   class="color-picker-input"
+                   value="${hexColor}"
                    data-room="${room.id}"
-                   style="background:${hexColor}"
-                   onclick="document.getElementById('picker-${room.id}').click()">
-              </div>
-              <input type="color" 
-                     id="picker-${room.id}" 
-                     class="color-picker-input"
-                     value="${hexColor}"
-                     onchange="setColor(${room.id}, this.value)"
-                     oninput="setColor(${room.id}, this.value)">
-            </div>
+                   onchange="setColor(${room.id}, this.value)"
+                   oninput="setColor(${room.id}, this.value)">
             <div class="color-values" data-room="${room.id}">
               <div class="color-value"><span>R</span><span class="r-val">${state.r}</span></div>
               <div class="color-value"><span>G</span><span class="g-val">${state.g}</span></div>
@@ -513,11 +487,6 @@ async function setColor(roomId, hexColor) {
   state.r = r;
   state.g = g;
   state.b = b;
-  
-  const preview = document.querySelector(`.color-preview[data-room="${roomId}"]`);
-  if (preview) {
-    preview.style.background = hexColor;
-  }
   
   const values = document.querySelector(`.color-values[data-room="${roomId}"]`);
   if (values) {
