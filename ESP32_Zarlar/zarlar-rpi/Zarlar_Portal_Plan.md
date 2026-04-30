@@ -868,4 +868,199 @@ retailtarief. Dan is een thuisbatterij wél interessant:
 
 ---
 
-*Zarlar Portal Projectdocument — Filip Delannoy — 25 april 2026*
+## 15. Geleerde lessen & Best Practices (30 april 2026)
+
+### 15.1 Verlichting pagina development — Auto-discovery & Optimistic UI
+
+**Deliverable:** `/verlichting.html` — Beheer verlichting in alle rooms via Matter switches
+
+**Architectuur:**
+- Auto-discovery via `/api/status` → filter alleen `online: true` rooms
+- State tracking in JavaScript `roomStates` object
+- Optimistic UI updates → toggle/color veranderen direct visueel
+- Rollback bij POST failure
+- iPhone fix: zichtbare `<input type="color">` ipv hidden
+
+**ESP32 ROOM endpoints:**
+- `/toggle_pixel_mode?idx=0` → Pixel 0 (MOV override)
+- `/toggle_pixel_mode?idx=1` → Pixel 1
+- `/toggle_pixel?idx=2..N` → Pixels 2+
+- `/setcolor?r=R&g=G&b=B` → RGB alle pixels
+- `/capabilities` → Pixel nicknames array
+
+**server.js proxy (v2.1):**
+```javascript
+// SW1 → pixel_mode[0]
+// SW2 → pixel_mode[1]  
+// SW3 → AAN/UIT logica (NIET toggle!)
+if (body.sw3 !== undefined) {
+  const targetState = body.sw3 === 1;
+  // Poll huidige state, toggle alleen pixels die moeten veranderen
+  for (let i = 2; i < pixelCount; i++) {
+    if (currentState[i] !== targetState) {
+      await fetch(`/toggle_pixel?idx=${i}`);
+    }
+  }
+}
+```
+
+**KRITIEKE LES:** SW3 moet AAN/UIT zijn, NIET blind toggle van alle pixels!
+
+---
+
+### 15.2 Matrix endpoint recovery — /api/matrix ontbrak
+
+**Probleem:** Na commit `9ebef44` ("v2.1: ROOM controller proxy") verdween `/api/matrix` endpoint.
+
+**Impact:**
+- matrix.html kon geen 16×16 matrix data ophalen
+- Dashboard controller iframe werkte nog, maar matrix niet zichtbaar
+
+**Oplossing:**
+1. Identificeer missing endpoint via `grep -n "/api/matrix" server.js`
+2. Git history: `git log --all -S "/api/matrix" --oneline`
+3. Restore vanuit commit `005ba9e`
+4. **KRITIEK:** Start ALTIJD van bestaande server.js, voeg chirurgisch toe
+
+**Herstelde code:**
+```javascript
+const PHOTON_WORKER = 'https://controllers-diagnose.filip-delannoy.workers.dev/sensor?id=';
+const PHOTON_IDS = { ... };
+
+app.get('/api/photon/:id', async (req, res) => { ... });
+app.get('/api/matrix', async (req, res) => {
+  // Poll alle ESP32 + Photons parallel
+  // Return combined result voor matrix.html
+});
+```
+
+---
+
+### 15.3 Deploy workflow — Kritieke regels
+
+**NOOIT doen:**
+- Uitroepteken (`!`) in commit messages → breekt bash
+- Nieuwe server.js maken zonder bestaande te checken
+- Handmatig files kopiëren → gebruik deploy.sh
+
+**WEL doen:**
+```bash
+bash ~/deploy.sh "Beschrijving zonder uitroepteken"
+```
+
+**Deploy.sh flow:**
+1. Detecteert files in ~/Downloads
+2. Git add + commit + pull --rebase + push
+3. SSH naar RPi → git pull + rsync public/
+4. Als server.js wijzigt → kopieer + restart zarlar.service
+5. Ruimt Downloads op
+
+**Regressie voorkomen:**
+- Upload HUIDIGE server.js voordat wijzigingen maken
+- Gebruik `str_replace` voor chirurgische edits
+- Test na deployment
+
+---
+
+### 15.4 Browser caching issues
+
+**Symptomen:**
+- Nieuwe code deployed, maar browser toont oude versie
+- Hard refresh (Cmd+Shift+R) helpt niet altijd
+- Mobiel vs desktop: verschillend cache gedrag
+
+**Fixes:**
+1. **Cache-busting URL:** `?v=2`, `?v=3` toevoegen
+2. **Incognito mode** voor clean test
+3. **iPhone Safari:** Settings → Clear History and Website Data
+4. **Verify server:** `curl http://localhost:3000/file.html` op RPi
+
+---
+
+### 15.5 Optimistic UI pattern
+
+**Principe:** UI update VOOR server response, rollback bij failure.
+
+```javascript
+async function togglePixel(roomId, switchType) {
+  const newState = !roomStates[roomId][switchType];
+  
+  // 1. Optimistic update
+  roomStates[roomId][switchType] = newState;
+  toggleEl.classList.toggle('on', newState);
+  
+  // 2. POST to server
+  const resp = await fetch('/api/set/...', { ... });
+  
+  // 3. Rollback on failure
+  if (!resp.ok) {
+    roomStates[roomId][switchType] = !newState;
+    toggleEl.classList.toggle('on', !newState);
+  }
+}
+```
+
+**Voordelen:**
+- Instant feedback
+- Geen reload nodig
+- Graceful degradation bij netwerk errors
+
+---
+
+### 15.6 iPhone kleurpicker fix
+
+**Probleem:** iOS triggert geen events op `opacity: 0` inputs.
+
+**Fout:**
+```html
+<div class="color-preview" onclick="...click hidden input...">
+<input type="color" style="opacity:0; width:0; height:0;">
+```
+
+**Fix:**
+```html
+<input type="color" 
+       class="color-picker-input"
+       style="width:60px; height:60px; border-radius:8px;"
+       oninput="setColor(...)"
+       onchange="setColor(...)">
+```
+
+**Resultaat:** Native iOS color picker werkt, ziet er netjes uit.
+
+---
+
+### 15.7 Auto-discovery pattern
+
+**Principe:** Toon ALLEEN online controllers, poll GEEN offline controllers.
+
+```javascript
+async function discoverRooms() {
+  const resp = await fetch('/api/status');
+  const status = await resp.json();
+  const rooms = [];
+  
+  // Filter ALLEEN online rooms
+  for (const [name, info] of Object.entries(status)) {
+    if (name.startsWith('room') && info.online) {
+      rooms.push({ id: parseInt(name.replace('room', '')), ... });
+    }
+  }
+  return rooms;
+}
+
+// Poll ALLEEN deze online rooms
+for (const room of onlineRooms) {
+  await fetch(`/api/poll/room${room.id}`);
+}
+```
+
+**Voordelen:**
+- Snelle load tijd (geen 3s timeouts op offline rooms)
+- Automatische updates wanneer rooms online komen
+- Clean UX: geen "offline" placeholders
+
+---
+
+*Zarlar Portal Projectdocument — Filip Delannoy — 30 april 2026 (updated)*
+
