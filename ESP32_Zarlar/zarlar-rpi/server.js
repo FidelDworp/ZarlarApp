@@ -39,6 +39,19 @@ const CONTROLLERS = {
   room81: 'http://192.168.0.81',  // Zitplaats
 };
 
+// ── Photon controllers (via Cloudflare Worker proxy) ──────────────────────────
+const PHOTON_WORKER = 'https://controllers-diagnose.filip-delannoy.workers.dev/sensor?id=';
+
+const PHOTON_IDS = {
+  'P-BandB':    '30002c000547343233323032',
+  'P-Badkamer': '5600420005504b464d323520',
+  'P-Inkom':    '2c0026000747343232363230',
+  'P-Keuken':   '310017001647373335333438',
+  'P-Waspl':    '33004f000e504b464d323520',
+  'P-Eetpl':    '3c0030000a47353138383138',
+  'P-Zitpl':    '200033000547373336323230',
+};
+
 // ── Standaard instellingen ────────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
   vast_prijs:      28.0,
@@ -148,6 +161,53 @@ app.get('/api/poll/:controller', async (req, res) => {
   } catch(e) {
     res.status(503).json({ online: false, error: 'Controller offline', detail: e.message });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHOTON PROXY  →  /api/photon/:id
+// ═══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/photon/:id', async (req, res) => {
+  try {
+    const r    = await fetch(PHOTON_WORKER + req.params.id, { timeout: 4000 });
+    const data = await r.json();
+    res.json(data);
+  } catch(e) {
+    res.status(503).json({ error: 'Photon niet bereikbaar', detail: e.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MATRIX DATA  →  /api/matrix
+// ═══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/matrix', async (req, res) => {
+  const result = {};
+
+  // ESP32 controllers parallel ophalen
+  const esp32Keys = Object.entries(CONTROLLERS);
+  await Promise.all(esp32Keys.map(async ([naam, url]) => {
+    try {
+      const r = await fetch(url + '/json', { timeout: 2000 });
+      result[naam] = { ...(await r.json()), online: true };
+    } catch {
+      result[naam] = { online: false };
+    }
+  }));
+
+  // Photons parallel ophalen
+  await Promise.all(Object.entries(PHOTON_IDS).map(async ([naam, id]) => {
+    try {
+      const r    = await fetch(PHOTON_WORKER + id, { timeout: 4000 });
+      const data = await r.json();
+      result[naam] = { ...data, online: data.online === 1 || data['online'] === true };
+    } catch {
+      result[naam] = { online: false };
+    }
+  }));
+
+  result._ts = Date.now();
+  res.json(result);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
