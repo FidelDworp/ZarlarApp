@@ -268,7 +268,7 @@ app.get('/api/status', async (req, res) => {
   const resultaten = {};
   await Promise.all(Object.entries(CONTROLLERS).map(async ([naam, url]) => {
     // Sla dubbele aliases over (room1 = room)
-    if (naam === 'room1') return;
+    if (naam === 'room1' || naam === 'room') return;
     try {
       const r = await fetch(url + '/json', { timeout: 2000 });
       const d = await r.json();
