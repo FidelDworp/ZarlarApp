@@ -205,7 +205,7 @@ app.post('/api/set/:controller', async (req, res) => {
       
       // SW1: Pixel 0 (MOV override)
       if (body.sw1 !== undefined) {
-        const url = `${baseUrl}/toggle_mov?idx=0`;
+        const url = `${baseUrl}/toggle_pixel_mode?idx=0`;
         const resp = await fetch(url, { timeout: 3000 });
         results.push({ sw1: resp.ok });
       }
