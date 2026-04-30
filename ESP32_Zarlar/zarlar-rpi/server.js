@@ -212,7 +212,7 @@ app.post('/api/set/:controller', async (req, res) => {
       
       // SW2: Pixel 1
       if (body.sw2 !== undefined) {
-        const url = `${baseUrl}/toggle_pixel?idx=1`;
+        const url = `${baseUrl}/toggle_pixel_mode?idx=1`;
         const resp = await fetch(url, { timeout: 3000 });
         results.push({ sw2: resp.ok });
       }
