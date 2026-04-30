@@ -238,9 +238,9 @@ async function discoverRooms() {
     const status = await resp.json();
     const rooms = [];
     
-    // Filter alleen room controllers die online zijn
+    // Filter alleen room controllers
     for (const [name, info] of Object.entries(status)) {
-      if (name.startsWith('room') && name !== 'room' && name !== 'room1') {
+      if (name.startsWith('room')) {
         const id = name.replace('room', '');
         rooms.push({
           id: parseInt(id),
@@ -255,7 +255,6 @@ async function discoverRooms() {
     
   } catch (err) {
     console.error('Room discovery failed:', err);
-    // Fallback: alleen room80
     return [{ id: 80, name: 'Eetplaats', online: false }];
   }
 }
@@ -279,14 +278,11 @@ async function loadRooms() {
   const container = document.getElementById('rooms-container');
   container.innerHTML = '<div class="loading"><div style="font-size:24px;margin-bottom:8px;">⚡</div>Kamers laden...</div>';
 
-  // Ontdek actieve rooms
   const discoveredRooms = await discoverRooms();
   const activeRooms = [];
 
-  // Poll elke room met error handling
   for (const room of discoveredRooms) {
     try {
-      // Poll met timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
@@ -298,7 +294,6 @@ async function loadRooms() {
       if (resp.ok) {
         const data = await resp.json();
         
-        // Haal capabilities op (met error handling)
         let capabilities = null;
         try {
           const capResp = await fetch(`/api/capabilities/room${room.id}`);
@@ -311,18 +306,14 @@ async function loadRooms() {
         
         activeRooms.push({ ...room, data, capabilities, online: true });
       } else {
-        // Room bestaat maar is offline - toon wel in lijst
         activeRooms.push({ ...room, data: null, capabilities: null, online: false });
       }
     } catch (err) {
-      // Timeout of netwerk error - skip deze room (geen crash)
       console.log(`Room${room.id} niet bereikbaar:`, err.message);
-      // Toon wel offline room
       activeRooms.push({ ...room, data: null, capabilities: null, online: false });
     }
   }
 
-  // Render rooms (ook als sommige offline zijn)
   if (activeRooms.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
@@ -358,14 +349,11 @@ function renderRoom(room) {
   const data = room.data;
   const caps = room.capabilities;
   
-  // Parse pixel_on string (bv. "P=00111000")
   const pixelStr = (data.t || '').replace('P=', '');
   const totalPixels = pixelStr.length;
   
-  // Maak pixel toggles met nicknames
   const pixels = [];
   
-  // Pixel 0 (MOV override of eerste pixel)
   if (totalPixels > 0) {
     const nickname = caps?.pixels?.[0] || `${room.name} Pixel 0`;
     pixels.push({
@@ -376,7 +364,6 @@ function renderRoom(room) {
     });
   }
   
-  // Pixel 1 (individueel)
   if (totalPixels > 1) {
     const nickname = caps?.pixels?.[1] || `${room.name} Pixel 1`;
     pixels.push({
@@ -387,7 +374,6 @@ function renderRoom(room) {
     });
   }
   
-  // Pixels 2+ (gegroepeerd)
   if (totalPixels > 2) {
     const nickname = caps?.pixels?.[2] || `${room.name} Pixel 2`;
     const label = totalPixels > 3 ? `${nickname}+` : nickname;
@@ -400,7 +386,6 @@ function renderRoom(room) {
     });
   }
 
-  // RGB kleuren
   const r = parseInt(data.q) || 0;
   const g = parseInt(data.r) || 0;
   const b = parseInt(data.s) || 0;
@@ -414,7 +399,6 @@ function renderRoom(room) {
       </div>
       <div class="room-body">
         
-        <!-- PIXELS -->
         <div class="pixels-grid">
           ${pixels.map(p => `
             <div class="toggle-item">
@@ -427,7 +411,6 @@ function renderRoom(room) {
           `).join('')}
         </div>
 
-        <!-- KLEURKIEZER -->
         <div class="color-section">
           <div class="color-header">🎨 Kleur alle pixels</div>
           <div class="color-controls">
@@ -455,7 +438,7 @@ function renderRoom(room) {
   `;
 }
 
-// ─── PIXEL TOGGLE ───────────────────────────────────────────────────────────
+// ─── PIXEL TOGGLE (GEEN RELOAD MEER) ───────────────────────────────────────
 async function togglePixel(roomId, switchType, state) {
   try {
     const resp = await fetch(`/api/set/room${roomId}`, {
@@ -466,10 +449,7 @@ async function togglePixel(roomId, switchType, state) {
       })
     });
     
-    if (resp.ok) {
-      // Reload na 200ms voor feedback
-      setTimeout(loadRooms, 200);
-    } else {
+    if (!resp.ok) {
       console.error('Toggle failed:', await resp.text());
     }
   } catch (err) {
@@ -477,7 +457,7 @@ async function togglePixel(roomId, switchType, state) {
   }
 }
 
-// ─── KLEUR INSTELLEN ────────────────────────────────────────────────────────
+// ─── KLEUR INSTELLEN (GEEN RELOAD MEER) ────────────────────────────────────
 async function setColor(roomId, hexColor) {
   try {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -490,9 +470,7 @@ async function setColor(roomId, hexColor) {
       body: JSON.stringify({ r, g, b })
     });
     
-    if (resp.ok) {
-      setTimeout(loadRooms, 200);
-    } else {
+    if (!resp.ok) {
       console.error('Color set failed:', await resp.text());
     }
   } catch (err) {
@@ -502,9 +480,6 @@ async function setColor(roomId, hexColor) {
 
 // ─── INITIALISATIE ──────────────────────────────────────────────────────────
 loadRooms();
-
-// Auto-refresh elke 10 seconden (optioneel)
-// setInterval(loadRooms, 10000);
   </script>
 </body>
 </html>

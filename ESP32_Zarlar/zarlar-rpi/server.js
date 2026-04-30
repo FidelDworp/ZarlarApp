@@ -217,18 +217,25 @@ app.post('/api/set/:controller', async (req, res) => {
         results.push({ sw2: resp.ok });
       }
       
-      // SW3: Pixels 2+ (toggle all)
+      // SW3: Pixels 2+ (AAN/UIT, niet toggle)
       if (body.sw3 !== undefined) {
-        // Haal eerst /json op om te weten hoeveel pixels er zijn
+        const targetState = body.sw3 === 1; // true = AAN, false = UIT
+        
+        // Haal eerst /json op om huidige state te weten
         const jsonResp = await fetch(`${baseUrl}/json`, { timeout: 3000 });
         const data = await jsonResp.json();
         const pixelStr = (data.t || '').replace('P=', '');
         
-        // Toggle alle pixels vanaf index 2
+        let toggled = 0;
+        // Toggle alleen pixels die niet in gewenste state zijn
         for (let i = 2; i < pixelStr.length; i++) {
-          await fetch(`${baseUrl}/toggle_pixel?idx=${i}`, { timeout: 3000 });
+          const currentState = pixelStr[i] === '1';
+          if (currentState !== targetState) {
+            await fetch(`${baseUrl}/toggle_pixel?idx=${i}`, { timeout: 3000 });
+            toggled++;
+          }
         }
-        results.push({ sw3: true, pixels: pixelStr.length - 2 });
+        results.push({ sw3: true, pixels: pixelStr.length - 2, toggled });
       }
       
       // RGB Color (alle pixels)
